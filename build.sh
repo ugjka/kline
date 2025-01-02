@@ -2,6 +2,6 @@
 patch main.go < diff.patch
 go build
 rsync -Pvhr --times . server.internal:kline/
-git reset --hard
+patch -R < diff.patch
 
 # yeet
