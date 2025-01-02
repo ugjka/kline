@@ -232,8 +232,8 @@ func main() {
 
 	delay := time.Millisecond * DEFAULTDELAY
 
-	// delicious
 	var delaymu sync.Mutex
+	// delicious
 	spam := func(channel, file string) {
 		text, err := os.ReadFile(file)
 		if err != nil {
