@@ -148,7 +148,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var mu sync.Mutex
+	var countVoicingmu sync.Mutex
 	var countVoicing int
 	var testchanVoiced bool = !TESTCHANGUARD
 	var bots []*kitty.Bot
@@ -185,14 +185,14 @@ func main() {
 					return m.Command == "MODE" && m.Param(0) == TESTCHAN && m.Param(1) == "+v" && m.Param(2) == nick
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
-					mu.Lock()
+					countVoicingmu.Lock()
 					countVoicing++
 					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-countVoicing)
 					if countVoicing == len(servers) {
 						log.Info("kline", "success", "all bots in the test channel voiced! You can proceed!")
 						testchanVoiced = true
 					}
-					mu.Unlock()
+					countVoicingmu.Unlock()
 				}})
 		}
 
@@ -233,6 +233,7 @@ func main() {
 	delay := time.Millisecond * DEFAULTDELAY
 
 	// delicious
+	var delaymu sync.Mutex
 	spam := func(channel, file string) {
 		text, err := os.ReadFile(file)
 		if err != nil {
@@ -245,7 +246,10 @@ func main() {
 			if abortSpam {
 				return
 			}
-			time.Sleep(delay)
+			delaymu.Lock()
+			d := delay
+			delaymu.Unlock()
+			time.Sleep(d)
 			bots[i].Msg(channel, string(line))
 			if i == len(bots)-1 {
 				i = 0
@@ -306,8 +310,10 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: delay can't be bigger than 1000ms")
 				continue
 			}
+			delaymu.Lock()
 			delay = time.Millisecond * time.Duration(number)
 			fmt.Fprintln(os.Stderr, "delay set to:", delay)
+			delaymu.Unlock()
 
 		// kline command "a" aborts current spamming
 		case "a":
@@ -344,7 +350,7 @@ func fakeIdentServer(bindaddress string, count int) error {
 	log.Info("kline", "fake ident server running on", localAddr)
 
 	unixuser := 'a'
-	var mu sync.Mutex
+	var usermu sync.Mutex
 	var wg sync.WaitGroup
 	wg.Add(count)
 	for {
@@ -368,13 +374,13 @@ func fakeIdentServer(bindaddress string, count int) error {
 				return
 			}
 
-			mu.Lock()
+			usermu.Lock()
 			response := fmt.Sprintf("%d, %d : USERID : UNIX : %c\r\n", id1, id2, unixuser)
 			unixuser++
 			if unixuser > 'z' {
 				unixuser = 'a'
 			}
-			mu.Unlock()
+			usermu.Unlock()
 			log.Info("kline", "got ident request", request, "response", response)
 			conn.Write([]byte(response))
 		}()
