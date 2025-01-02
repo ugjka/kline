@@ -343,8 +343,8 @@ func fakeIdentServer(bindaddress string, count int) error {
 
 	log.Info("kline", "fake ident server running on", localAddr)
 
-	var mu sync.Mutex
 	unixuser := 'a'
+	var mu sync.Mutex
 	var wg sync.WaitGroup
 	wg.Add(count)
 	for {
