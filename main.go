@@ -183,17 +183,20 @@ func main() {
 		bot.Logger.SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StdoutHandler))
 
 		if TESTCHANGUARD {
+			var mu sync.Mutex
 			bot.AddTrigger(kitty.Trigger{
 				Condition: func(b *kitty.Bot, m *kitty.Message) bool {
 					return m.Command == "MODE" && m.Param(0) == TESTCHAN && m.Param(1) == "+v" && m.Param(2) == nick
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
+					mu.Lock()
 					countVoicing.Add(1)
 					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-int(countVoicing.Load()))
 					if int(countVoicing.Load()) == len(servers) {
 						log.Info("kline", "success", "all bots in the test channel voiced! You can proceed!")
 						testchanVoiced.Store(true)
 					}
+					mu.Unlock()
 				}})
 		}
 
@@ -247,8 +250,7 @@ func main() {
 			if abortSpam.Load() {
 				return
 			}
-			d := delay.Load()
-			time.Sleep(time.Duration(d))
+			time.Sleep(time.Duration(delay.Load()))
 			bots[i].Msg(channel, string(line))
 			if i == len(bots)-1 {
 				i = 0
