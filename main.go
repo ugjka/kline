@@ -343,8 +343,8 @@ func fakeIdentServer(bindaddress string, count int) error {
 
 	log.Info("kline", "fake ident server running on", localAddr)
 
-	var unixuser atomic.Int64
-	unixuser.Store('a')
+	var unixuser = 'a'
+	var mu sync.Mutex
 	var userwg sync.WaitGroup
 	userwg.Add(count)
 	for {
@@ -368,11 +368,13 @@ func fakeIdentServer(bindaddress string, count int) error {
 				return
 			}
 
-			response := fmt.Sprintf("%d, %d : USERID : UNIX : %c\r\n", id1, id2, unixuser.Load())
-			unixuser.Add(1)
-			if unixuser.Load() > 'z' {
-				unixuser.Store('a')
+			mu.Lock()
+			response := fmt.Sprintf("%d, %d : USERID : UNIX : %c\r\n", id1, id2, unixuser)
+			unixuser++
+			if unixuser > 'z' {
+				unixuser = 'a'
 			}
+			mu.Unlock()
 			log.Info("kline", "got ident request", request, "response", response)
 			conn.Write([]byte(response))
 		}()
