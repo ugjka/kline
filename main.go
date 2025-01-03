@@ -150,7 +150,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var countVoicingmu sync.Mutex
+	var mu sync.Mutex
 	var countVoicing int
 	var testchanVoiced bool = !TESTCHANGUARD
 	var bots []*kitty.Bot
@@ -187,14 +187,14 @@ func main() {
 					return m.Command == "MODE" && m.Param(0) == TESTCHAN && m.Param(1) == "+v" && m.Param(2) == nick
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
-					countVoicingmu.Lock()
+					mu.Lock()
 					countVoicing++
 					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-countVoicing)
 					if countVoicing == len(servers) {
 						log.Info("kline", "success", "all bots in the test channel voiced! You can proceed!")
 						testchanVoiced = true
 					}
-					countVoicingmu.Unlock()
+					mu.Unlock()
 				}})
 		}
 
@@ -211,7 +211,9 @@ func main() {
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
 					b.Logger.Warn("kline", "shut off valve", "engaged")
+					mu.Lock()
 					abortSpam = true
+					mu.Unlock()
 				},
 			})
 			bot.AddTrigger(kitty.Trigger{
@@ -220,7 +222,9 @@ func main() {
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
 					b.Logger.Warn("kline", "shut off valve", "disengaged")
+					mu.Lock()
 					abortSpam = false
+					mu.Unlock()
 				},
 			})
 		})
@@ -245,9 +249,12 @@ func main() {
 		lines := bytes.Split(text, []byte("\n"))
 		i := 0
 		for _, line := range lines {
+			mu.Lock()
 			if abortSpam {
+				mu.Unlock()
 				return
 			}
+			mu.Unlock()
 			delaymu.Lock()
 			d := delay
 			delaymu.Unlock()
@@ -286,10 +293,13 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: testchan not set")
 				continue
 			}
+			mu.Lock()
 			if !testchanVoiced {
+				mu.Unlock()
 				fmt.Fprintln(os.Stderr, "error: testchan bots are not voiced, will not proceed")
 				continue
 			}
+			mu.Unlock()
 			if len(parametrs) < 2 {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
@@ -319,9 +329,13 @@ func main() {
 
 		// kline command "a" aborts current spamming
 		case "a":
+			mu.Lock()
 			abortSpam = true
+			mu.Unlock()
 			time.Sleep(time.Second + delay)
+			mu.Lock()
 			abortSpam = false
+			mu.Unlock()
 		default:
 			fmt.Println("error: invalid command")
 		}
