@@ -119,6 +119,7 @@ func main() {
 	}
 
 	// if BINDHOST set, creates a custom dialer for irc
+	type dialfunc func(network string, addr string, tlsConf *tls.Config) (*tls.Conn, error)
 	customTLSDial, err := func() (dialfunc, error) {
 		if BINDHOST == "" {
 			return nil, nil
@@ -231,9 +232,9 @@ func main() {
 		go b.Run()
 	}
 
+	var delaymu sync.Mutex
 	delay := time.Millisecond * DEFAULTDELAY
 
-	var delaymu sync.Mutex
 	// delicious
 	spam := func(channel, file string) {
 		text, err := os.ReadFile(file)
@@ -327,9 +328,6 @@ func main() {
 	}
 }
 
-// ok, some weird go stuff
-type dialfunc func(network string, addr string, tlsConf *tls.Config) (*tls.Conn, error)
-
 // this was simpler than i imagined
 func fakeIdentServer(bindaddress string, count int) error {
 	localAddr, err := net.ResolveIPAddr("ip", bindaddress)
@@ -350,10 +348,10 @@ func fakeIdentServer(bindaddress string, count int) error {
 
 	log.Info("kline", "fake ident server running on", localAddr)
 
-	unixuser := 'a'
+	var unixuser = 'a'
 	var usermu sync.Mutex
-	var wg sync.WaitGroup
-	wg.Add(count)
+	var userwg sync.WaitGroup
+	userwg.Add(count)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -361,7 +359,7 @@ func fakeIdentServer(bindaddress string, count int) error {
 		}
 		go func() {
 			defer conn.Close()
-			defer wg.Done()
+			defer userwg.Done()
 			r := bufio.NewReader(conn)
 			request, err := r.ReadString('\n')
 			if err != nil {
@@ -390,7 +388,7 @@ func fakeIdentServer(bindaddress string, count int) error {
 			break
 		}
 	}
-	wg.Wait()
+	userwg.Wait()
 	log.Info("kline", "fake ident finished", "shutting down")
 	return nil
 }
