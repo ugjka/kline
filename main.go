@@ -15,6 +15,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	kitty "github.com/ugjka/kittybot"
@@ -150,12 +151,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	var mu sync.Mutex
-	var countVoicing int
-	var testchanVoiced bool = !TESTCHANGUARD
+	var countVoicing atomic.Int64
+	var testchanVoiced atomic.Bool
+	testchanVoiced.Store(!TESTCHANGUARD)
 	var bots []*kitty.Bot
 	var once sync.Once
-	var abortSpam bool
+	var abortSpam atomic.Bool
 	for i := range len(servers) {
 		opts := func(bot *kitty.Bot) {
 
@@ -187,14 +188,12 @@ func main() {
 					return m.Command == "MODE" && m.Param(0) == TESTCHAN && m.Param(1) == "+v" && m.Param(2) == nick
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
-					mu.Lock()
-					countVoicing++
-					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-countVoicing)
-					if countVoicing == len(servers) {
+					countVoicing.Add(1)
+					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-int(countVoicing.Load()))
+					if int(countVoicing.Load()) == len(servers) {
 						log.Info("kline", "success", "all bots in the test channel voiced! You can proceed!")
-						testchanVoiced = true
+						testchanVoiced.Store(true)
 					}
-					mu.Unlock()
 				}})
 		}
 
@@ -211,9 +210,7 @@ func main() {
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
 					b.Logger.Warn("kline", "shut off valve", "engaged")
-					mu.Lock()
-					abortSpam = true
-					mu.Unlock()
+					abortSpam.Store(true)
 				},
 			})
 			bot.AddTrigger(kitty.Trigger{
@@ -222,9 +219,7 @@ func main() {
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
 					b.Logger.Warn("kline", "shut off valve", "disengaged")
-					mu.Lock()
-					abortSpam = false
-					mu.Unlock()
+					abortSpam.Store(false)
 				},
 			})
 		})
@@ -236,8 +231,8 @@ func main() {
 		go b.Run()
 	}
 
-	var delaymu sync.Mutex
-	delay := time.Millisecond * DEFAULTDELAY
+	var delay atomic.Int64
+	delay.Store(int64(time.Millisecond) * DEFAULTDELAY)
 
 	// delicious
 	spam := func(channel, file string) {
@@ -249,16 +244,11 @@ func main() {
 		lines := bytes.Split(text, []byte("\n"))
 		i := 0
 		for _, line := range lines {
-			mu.Lock()
-			if abortSpam {
-				mu.Unlock()
+			if abortSpam.Load() {
 				return
 			}
-			mu.Unlock()
-			delaymu.Lock()
-			d := delay
-			delaymu.Unlock()
-			time.Sleep(d)
+			d := delay.Load()
+			time.Sleep(time.Duration(d))
 			bots[i].Msg(channel, string(line))
 			if i == len(bots)-1 {
 				i = 0
@@ -293,13 +283,10 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: testchan not set")
 				continue
 			}
-			mu.Lock()
-			if !testchanVoiced {
-				mu.Unlock()
+			if !testchanVoiced.Load() {
 				fmt.Fprintln(os.Stderr, "error: testchan bots are not voiced, will not proceed")
 				continue
 			}
-			mu.Unlock()
 			if len(parametrs) < 2 {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
@@ -322,20 +309,14 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: delay can't be bigger than 1000ms")
 				continue
 			}
-			delaymu.Lock()
-			delay = time.Millisecond * time.Duration(number)
-			fmt.Fprintln(os.Stderr, "delay set to:", delay)
-			delaymu.Unlock()
+			delay.Store(int64(time.Millisecond) * int64(number))
+			fmt.Fprintln(os.Stderr, "delay set to:", time.Duration(delay.Load()))
 
 		// kline command "a" aborts current spamming
 		case "a":
-			mu.Lock()
-			abortSpam = true
-			mu.Unlock()
-			time.Sleep(time.Second + delay)
-			mu.Lock()
-			abortSpam = false
-			mu.Unlock()
+			abortSpam.Store(true)
+			time.Sleep(time.Second + time.Duration(delay.Load()))
+			abortSpam.Store(false)
 		default:
 			fmt.Println("error: invalid command")
 		}
@@ -362,8 +343,8 @@ func fakeIdentServer(bindaddress string, count int) error {
 
 	log.Info("kline", "fake ident server running on", localAddr)
 
-	var unixuser = 'a'
-	var usermu sync.Mutex
+	var unixuser atomic.Int64
+	unixuser.Store('a')
 	var userwg sync.WaitGroup
 	userwg.Add(count)
 	for {
@@ -387,13 +368,11 @@ func fakeIdentServer(bindaddress string, count int) error {
 				return
 			}
 
-			usermu.Lock()
-			response := fmt.Sprintf("%d, %d : USERID : UNIX : %c\r\n", id1, id2, unixuser)
-			unixuser++
-			if unixuser > 'z' {
-				unixuser = 'a'
+			response := fmt.Sprintf("%d, %d : USERID : UNIX : %c\r\n", id1, id2, unixuser.Load())
+			unixuser.Add(1)
+			if unixuser.Load() > 'z' {
+				unixuser.Store('a')
 			}
-			usermu.Unlock()
 			log.Info("kline", "got ident request", request, "response", response)
 			conn.Write([]byte(response))
 		}()
