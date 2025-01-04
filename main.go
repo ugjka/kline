@@ -230,11 +230,15 @@ func main() {
 	// kline lazor printer made by brother
 	go func() {
 		i := 0
+		var tmp []byte
 		for {
 			time.Sleep(time.Duration(delay.Load()))
 			printdb.Lock()
 			for channel, line := range printdb.store {
-				bots[i].Msg(channel, line.get())
+				tmp = line.get()
+				if tmp != nil {
+					bots[i].Msg(channel, string(tmp))
+				}
 			}
 			printdb.Unlock()
 			i++
@@ -447,24 +451,25 @@ func utf16Bom(b []byte) int8 {
 type lines struct {
 	sync.Mutex
 	lines [][]byte
+	tmp   [][]byte
 }
 
 func (l *lines) put(data []byte) {
-	lines := bytes.Split(data, []byte("\n"))
+	l.tmp = bytes.Split(data, []byte("\n"))
 	l.Lock()
-	l.lines = append(l.lines, lines...)
+	l.lines = append(l.lines, l.tmp...)
 	l.Unlock()
 }
 
-func (l *lines) get() string {
+func (l *lines) get() []byte {
 	l.Lock()
 	defer l.Unlock()
 	if len(l.lines) > 0 {
-		line := string(l.lines[0])
+		line := l.lines[0]
 		l.lines = l.lines[1:]
 		return line
 	} else {
-		return ""
+		return nil
 	}
 }
 
@@ -478,15 +483,13 @@ func (c *chans) get(ch string) *lines {
 	defer c.Unlock()
 	if c.store == nil {
 		c.store = make(map[string]*lines)
-	}
-	l, ok := c.store[ch]
-	if ok {
-		return l
-	} else {
-		l := &lines{}
-		c.store[ch] = l
+	} else if l, ok := c.store[ch]; ok {
 		return l
 	}
+
+	l := &lines{}
+	c.store[ch] = l
+	return l
 }
 
 func (c *chans) clear(ch string) {
