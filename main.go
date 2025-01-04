@@ -250,6 +250,7 @@ func main() {
 
 	// delicious kline
 	spam := func(channel, file string) { // in a can
+		// yummy!!!
 		text, err := os.ReadFile(file)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -265,6 +266,7 @@ func main() {
 				return
 			}
 		}
+
 		lines := printdb.get(channel)
 		lines.put(text)
 	}
