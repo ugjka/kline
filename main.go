@@ -401,6 +401,7 @@ func fakeIdentServer(bindaddress string, count int) error {
 }
 
 // DecodeUTF16 get a slice of bytes and decode it to UTF-8
+// some crazy CERN hard math science
 func decodeUTF16(b []byte) ([]byte, error) {
 
 	if len(b)%2 != 0 {
