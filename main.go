@@ -450,14 +450,15 @@ func utf16Bom(b []byte) int8 {
 
 type lines struct {
 	sync.Mutex
-	lines [][]byte
-	tmp   [][]byte
+	lines    [][]byte
+	tmplines [][]byte
+	tmpline  []byte
 }
 
 func (l *lines) put(data []byte) {
 	l.Lock()
-	l.tmp = bytes.Split(data, []byte("\n"))
-	l.lines = append(l.lines, l.tmp...)
+	l.tmplines = bytes.Split(data, []byte("\n"))
+	l.lines = append(l.lines, l.tmplines...)
 	l.Unlock()
 }
 
@@ -465,9 +466,9 @@ func (l *lines) get() []byte {
 	l.Lock()
 	defer l.Unlock()
 	if len(l.lines) > 0 {
-		line := l.lines[0]
+		l.tmpline = l.lines[0]
 		l.lines = l.lines[1:]
-		return line
+		return l.tmpline
 	} else {
 		return nil
 	}
