@@ -237,7 +237,7 @@ func main() {
 			for channel, line := range printdb.store {
 				tmp = line.get()
 				if tmp != nil {
-					bots[i].Msg(channel, string(tmp))
+					bots[i].Msg(channel, string(tmp)) // printer goes brrrrrr
 				}
 			}
 			printdb.Unlock()
