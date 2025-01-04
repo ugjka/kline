@@ -161,7 +161,6 @@ func main() {
 	var abortSpam atomic.Bool
 	for i := range len(servers) {
 		opts := func(bot *kitty.Bot) {
-
 			bot.Channels = []string{}
 			if PARTYCHAN != "" && PARTYCHANOPEN {
 				bot.Channels = append(bot.Channels, PARTYCHAN)
@@ -172,9 +171,7 @@ func main() {
 
 			bot.SSL = true
 			bot.ThrottleDelay = 0
-			if BINDHOST != "" {
-				bot.DialTLS = customTLSDial
-			}
+			bot.DialTLS = customTLSDial
 		}
 		if BOTNICKNAMEBASE == "" {
 			panic("you did something stupid, you silly willy")
