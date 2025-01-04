@@ -17,6 +17,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode/utf16"
+	"unicode/utf8"
 
 	kitty "github.com/ugjka/kittybot"
 	log "gopkg.in/inconshreveable/log15.v2"
@@ -244,6 +246,17 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
+
+		// some mirc artists did art in utf16
+		// so detect utf16 and convert to utf8
+		if (len(text)%2 == 0) && (bytes.HasPrefix(text, []byte{0xFF, 0xFE}) || bytes.HasPrefix(text, []byte{0xFE, 0xFF})) {
+			text, err = decodeUTF16(text)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return
+			}
+		}
+
 		lines := bytes.Split(text, []byte("\n"))
 		i := 0
 		for _, line := range lines {
@@ -388,4 +401,55 @@ func fakeIdentServer(bindaddress string, count int) error {
 	userwg.Wait()
 	log.Info("kline", "fake ident finished", "shutting down")
 	return nil
+}
+
+// DecodeUTF16 get a slice of bytes and decode it to UTF-8
+func decodeUTF16(b []byte) ([]byte, error) {
+
+	if len(b)%2 != 0 {
+		return nil, fmt.Errorf("must have even length byte slice")
+	}
+
+	bom := utf16Bom(b)
+	if bom < 0 {
+		return nil, fmt.Errorf("buffer is too small")
+	}
+
+	u16s := make([]uint16, 1)
+	ret := &bytes.Buffer{}
+	b8buf := make([]byte, 4)
+	lb := len(b)
+
+	for i := 0; i < lb; i += 2 {
+		//assuming bom is big endian if 0 returned
+		if bom == 0 || bom == 1 {
+			u16s[0] = uint16(b[i+1]) + (uint16(b[i]) << 8)
+		}
+		if bom == 2 {
+			u16s[0] = uint16(b[i]) + (uint16(b[i+1]) << 8)
+		}
+		r := utf16.Decode(u16s)
+		n := utf8.EncodeRune(b8buf, r[0])
+		ret.Write([]byte(string(b8buf[:n])))
+	}
+
+	return ret.Bytes(), nil
+}
+
+// UTF16Bom returns 0 for no BOM, 1 for Big Endian and 2 for little endian
+// it will return -1 if b is too small for having BOM
+func utf16Bom(b []byte) int8 {
+	if len(b) < 2 {
+		return -1
+	}
+
+	if b[0] == 0xFE && b[1] == 0xFF {
+		return 1
+	}
+
+	if b[0] == 0xFF && b[1] == 0xFE {
+		return 2
+	}
+
+	return 0
 }
