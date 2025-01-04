@@ -153,12 +153,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	var printdb chans
 	var countVoicing atomic.Int64
 	var testchanVoiced atomic.Bool
 	testchanVoiced.Store(!TESTCHANGUARD)
 	var bots []*kitty.Bot
 	var once sync.Once
-	var abortSpam atomic.Bool
 	for i := range len(servers) {
 		opts := func(bot *kitty.Bot) {
 			bot.Channels = []string{}
@@ -212,16 +212,7 @@ func main() {
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
 					b.Logger.Warn("kline", "shut off valve", "engaged")
-					abortSpam.Store(true)
-				},
-			})
-			bot.AddTrigger(kitty.Trigger{
-				Condition: func(b *kitty.Bot, m *kitty.Message) bool {
-					return m.Command == "MODE" && m.Param(0) == PARTYCHAN && m.Param(1) == "-m" && (m.Param(3) == "" || m.Param(3) == nick)
-				},
-				Action: func(b *kitty.Bot, m *kitty.Message) {
-					b.Logger.Warn("kline", "shut off valve", "disengaged")
-					abortSpam.Store(false)
+					printdb.clear(PARTYCHAN)
 				},
 			})
 		})
@@ -236,15 +227,32 @@ func main() {
 	var delay atomic.Int64
 	delay.Store(int64(time.Millisecond) * DEFAULTDELAY)
 
-	// delicious
-	spam := func(channel, file string) {
+	// kline lazor printer made by brother
+	go func() {
+		i := 0
+		for {
+			time.Sleep(time.Duration(delay.Load()))
+			printdb.Lock()
+			for channel, line := range printdb.store {
+				bots[i].Msg(channel, line.get())
+			}
+			printdb.Unlock()
+			i++
+			if i == len(bots) {
+				i = 0
+			}
+		}
+	}()
+
+	// delicious kline
+	spam := func(channel, file string) { // in a can
 		text, err := os.ReadFile(file)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
-		// some mirc artists did art in utf16
+		// some mirc woofuses did art in utf16
 		// so detect utf16 and convert to utf8
 		if (len(text)%2 == 0) && (bytes.HasPrefix(text, []byte{0xFF, 0xFE}) || bytes.HasPrefix(text, []byte{0xFE, 0xFF})) {
 			text, err = decodeUTF16(text)
@@ -253,24 +261,11 @@ func main() {
 				return
 			}
 		}
-
-		lines := bytes.Split(text, []byte("\n"))
-		i := 0
-		for _, line := range lines {
-			if abortSpam.Load() {
-				return
-			}
-			time.Sleep(time.Duration(delay.Load()))
-			bots[i].Msg(channel, string(line))
-			if i == len(bots)-1 {
-				i = 0
-			} else {
-				i++
-			}
-		}
+		lines := printdb.get(channel)
+		lines.put(text)
 	}
 
-	// scan for kline bot commands from standard input
+	// scan for kline bot commands from standard input, did you get your unix education yet?
 	stdin := bufio.NewScanner(os.Stdin)
 	for stdin.Scan() {
 		command := stdin.Text()
@@ -326,9 +321,7 @@ func main() {
 
 		// kline command "a" aborts current spamming
 		case "a":
-			abortSpam.Store(true)
-			time.Sleep(time.Second + time.Duration(delay.Load()))
-			abortSpam.Store(false)
+			printdb.clear("")
 		default:
 			fmt.Println("error: invalid command")
 		}
@@ -449,4 +442,59 @@ func utf16Bom(b []byte) int8 {
 	}
 
 	return 0
+}
+
+type lines struct {
+	sync.Mutex
+	lines [][]byte
+}
+
+func (l *lines) put(data []byte) {
+	lines := bytes.Split(data, []byte("\n"))
+	l.Lock()
+	l.lines = append(l.lines, lines...)
+	l.Unlock()
+}
+
+func (l *lines) get() string {
+	l.Lock()
+	defer l.Unlock()
+	if len(l.lines) > 0 {
+		line := string(l.lines[0])
+		l.lines = l.lines[1:]
+		return line
+	} else {
+		return ""
+	}
+}
+
+type chans struct {
+	sync.Mutex
+	store map[string]*lines
+}
+
+func (c *chans) get(ch string) *lines {
+	c.Lock()
+	defer c.Unlock()
+	if c.store == nil {
+		c.store = make(map[string]*lines)
+	}
+	l, ok := c.store[ch]
+	if ok {
+		return l
+	} else {
+		l := &lines{}
+		c.store[ch] = l
+		return l
+	}
+}
+
+func (c *chans) clear(ch string) {
+	c.Lock()
+	defer c.Unlock()
+	if ch != "" {
+		delete(c.store, ch)
+		return
+	}
+	clear(c.store)
 }
