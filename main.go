@@ -455,8 +455,8 @@ type lines struct {
 }
 
 func (l *lines) put(data []byte) {
-	l.tmp = bytes.Split(data, []byte("\n"))
 	l.Lock()
+	l.tmp = bytes.Split(data, []byte("\n"))
 	l.lines = append(l.lines, l.tmp...)
 	l.Unlock()
 }
