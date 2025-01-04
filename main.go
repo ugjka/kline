@@ -335,6 +335,7 @@ func main() {
 }
 
 // this was simpler than i imagined
+// perhaps i should get a job!
 func fakeIdentServer(bindaddress string, count int) error {
 	localAddr, err := net.ResolveIPAddr("ip", bindaddress)
 	if err != nil {
