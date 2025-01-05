@@ -17,10 +17,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/saintfish/chardet"
 	kitty "github.com/ugjka/kittybot"
+	"golang.org/x/net/html/charset"
 	log "gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -230,6 +231,7 @@ func main() {
 	// kline lazor printer made by brother
 	go func() {
 		i := 0
+		var max int
 		var tmp []byte
 		for {
 			time.Sleep(time.Duration(delay.Load()))
@@ -237,6 +239,10 @@ func main() {
 			for channel, line := range printdb.store {
 				tmp = line.get()
 				if tmp != nil {
+					max = bots[i].MsgMaxSize(channel)
+					if len(tmp) > max {
+						tmp = tmp[:max]
+					}
 					bots[i].Msg(channel, string(tmp)) // printer goes brrrrrr
 				}
 			}
@@ -257,13 +263,21 @@ func main() {
 			return
 		}
 
-		// some mirc woofuses did art in utf16
-		// so detect utf16 and convert to utf8
-		if (len(text)%2 == 0) && (bytes.HasPrefix(text, []byte{0xFF, 0xFE}) || bytes.HasPrefix(text, []byte{0xFE, 0xFF})) {
-			text, err = decodeUTF16(text)
+		// detect charset encoding and convert anything weird to utf-8
+		// not exact science, may get garbage if something is niche
+		if !utf8.Valid(text) {
+			res, err := chardet.NewTextDetector().DetectBest(text)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				return
+			}
+			enc, _ := charset.Lookup(res.Charset)
+			if enc != nil {
+				text, err = enc.NewDecoder().Bytes(text)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					return
+				}
 			}
 		}
 
@@ -288,7 +302,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
 			}
-			go spam(PARTYCHAN, strings.Join(parametrs[1:], " "))
+			spam(PARTYCHAN, strings.Join(parametrs[1:], " "))
 
 		// kline command "t <filename.txt>" posts spam to testchan
 		case "t":
@@ -304,7 +318,7 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
 			}
-			go spam(TESTCHAN, strings.Join(parametrs[1:], " "))
+			spam(TESTCHAN, strings.Join(parametrs[1:], " "))
 
 		// kline command "d <milliseconds>" sets  delay between messages
 		case "d":
@@ -398,58 +412,6 @@ func fakeIdentServer(bindaddress string, count int) error {
 	userwg.Wait()
 	log.Info("kline", "fake ident finished", "shutting down")
 	return nil
-}
-
-// DecodeUTF16 get a slice of bytes and decode it to UTF-8
-// some crazy CERN hard math science
-func decodeUTF16(b []byte) ([]byte, error) {
-
-	if len(b)%2 != 0 {
-		return nil, fmt.Errorf("must have even length byte slice")
-	}
-
-	bom := utf16Bom(b)
-	if bom < 0 {
-		return nil, fmt.Errorf("buffer is too small")
-	}
-
-	u16s := make([]uint16, 1)
-	ret := &bytes.Buffer{}
-	b8buf := make([]byte, 4)
-	lb := len(b)
-
-	for i := 0; i < lb; i += 2 {
-		//assuming bom is big endian if 0 returned
-		if bom == 0 || bom == 1 {
-			u16s[0] = uint16(b[i+1]) + (uint16(b[i]) << 8)
-		}
-		if bom == 2 {
-			u16s[0] = uint16(b[i]) + (uint16(b[i+1]) << 8)
-		}
-		r := utf16.Decode(u16s)
-		n := utf8.EncodeRune(b8buf, r[0])
-		ret.Write([]byte(string(b8buf[:n])))
-	}
-
-	return ret.Bytes(), nil
-}
-
-// UTF16Bom returns 0 for no BOM, 1 for Big Endian and 2 for little endian
-// it will return -1 if b is too small for having BOM
-func utf16Bom(b []byte) int8 {
-	if len(b) < 2 {
-		return -1
-	}
-
-	if b[0] == 0xFE && b[1] == 0xFF {
-		return 1
-	}
-
-	if b[0] == 0xFF && b[1] == 0xFE {
-		return 2
-	}
-
-	return 0
 }
 
 type lines struct {

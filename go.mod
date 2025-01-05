@@ -5,7 +5,9 @@ go 1.23
 toolchain go1.23.4
 
 require (
+	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/ugjka/kittybot v0.0.50
+	golang.org/x/net v0.33.0
 	gopkg.in/inconshreveable/log15.v2 v2.16.0
 )
 
@@ -16,6 +18,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ugjka/ircmsg v0.0.3 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
