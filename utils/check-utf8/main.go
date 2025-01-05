@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"unicode/utf8"
+
+	"github.com/saintfish/chardet"
+	"golang.org/x/net/html/charset"
 )
 
 func main() {
@@ -25,7 +28,13 @@ func main() {
 			log.Fatal(err)
 		}
 		if !utf8.Valid(data) {
-			fmt.Println("Invalid UTF-8 in:", file.Name())
+			res, err := chardet.NewTextDetector().DetectBest(data)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err, "in:", file.Name())
+				continue
+			}
+			enc, _ := charset.Lookup(res.Charset)
+			fmt.Println(enc, "in:", file.Name())
 		}
 	}
 }
