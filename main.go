@@ -19,9 +19,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/saintfish/chardet"
+	"github.com/gogs/chardet"
 	kitty "github.com/ugjka/kittybot"
-	"golang.org/x/net/html/charset"
+	"golang.org/x/text/encoding/ianaindex"
 	log "gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -267,25 +267,21 @@ func main() {
 			return
 		}
 
+		// attempts to
 		// detect charset encoding and convert anything weird to utf-8
 		// not exact science, may get garbage if something is niche
 		if !utf8.Valid(text) {
 			res, err := chardet.NewTextDetector().DetectBest(text)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
 				return
 			}
 
-			enc, _ := charset.Lookup(res.Charset)
-			if enc == nil {
-				fmt.Fprintln(os.Stderr, "error: unknown encoding")
-				return
-			}
-
-			text, err = enc.NewDecoder().Bytes(text)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				return
+			enc, err := ianaindex.IANA.Encoding(res.Charset)
+			if enc != nil && err == nil {
+				text, err = enc.NewDecoder().Bytes(text)
+				if err != nil {
+					return
+				}
 			}
 		}
 

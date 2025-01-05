@@ -2,40 +2,40 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"unicode/utf8"
 
-	"github.com/saintfish/chardet"
-	"golang.org/x/net/html/charset"
+	"github.com/gogs/chardet"
+	"golang.org/x/text/encoding/ianaindex"
 )
 
 func main() {
-	path := "./"
-	// pass dir as arg
+	// pass file or files
+	var files []string
 	if len(os.Args) > 1 {
-		path = os.Args[1]
+		files = os.Args[1:]
+	} else {
+		fmt.Fprintln(os.Stderr, "no files given!")
+		os.Exit(1)
 	}
-	dir, err := os.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, file := range dir {
-		if file.IsDir() {
-			continue
-		}
-		data, err := os.ReadFile(path + file.Name())
+
+	for _, file := range files {
+		data, err := os.ReadFile(file)
 		if err != nil {
-			log.Fatal(err)
+			continue
 		}
 		if !utf8.Valid(data) {
 			res, err := chardet.NewTextDetector().DetectBest(data)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err, "in:", file.Name())
+				fmt.Fprintln(os.Stderr, err, "in:", file)
 				continue
 			}
-			enc, _ := charset.Lookup(res.Charset)
-			fmt.Println(enc, "in:", file.Name())
+			enc, err := ianaindex.IANA.Encoding(res.Charset)
+			if err != nil || enc == nil {
+				fmt.Fprintln(os.Stderr, res.Charset, "not supported:", file)
+				continue
+			}
+			fmt.Println(res.Confidence, enc, "in:", file)
 		}
 	}
 }

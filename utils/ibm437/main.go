@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
-	"github.com/gogs/chardet"
 	"golang.org/x/text/encoding/ianaindex"
 )
 
@@ -16,13 +14,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	res, err := chardet.NewTextDetector().DetectBest(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	enc, err := ianaindex.IANA.Encoding(res.Charset)
+	enc, err := ianaindex.IANA.Encoding("IBM437")
 	if enc != nil && err == nil {
-		fmt.Fprintln(os.Stderr, enc, res.Confidence, file)
 		data, err = enc.NewDecoder().Bytes(data)
 		if err != nil {
 			log.Fatal(err)
@@ -30,5 +23,4 @@ func main() {
 		os.Stdout.Write(data)
 		return
 	}
-	fmt.Fprintln(os.Stderr, "encoding not detected")
 }
