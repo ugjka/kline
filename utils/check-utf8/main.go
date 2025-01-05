@@ -12,6 +12,7 @@ import (
 
 func main() {
 	path := "./"
+	// pass dir as arg
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	}

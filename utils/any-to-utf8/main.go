@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	// pass filename as arg
 	file := os.Args[1]
 	data, err := os.ReadFile(file)
 	if err != nil {
