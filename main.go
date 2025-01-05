@@ -289,24 +289,26 @@ func main() {
 		lines.put(text)
 	}
 
+	// TODO: lag tester
+
 	// scan for kline bot commands from standard input, did you get your unix education yet?
 	stdin := bufio.NewScanner(os.Stdin)
 	for stdin.Scan() {
 		command := stdin.Text()
-		parametrs := strings.Split(command, " ")
+		parameters := strings.Split(command, " ")
 
-		switch parametrs[0] {
+		switch parameters[0] {
 		// kline command "p <filename.txt>" posts spam to partychan
 		case "p":
 			if !PARTYCHANOPEN || PARTYCHAN == "" {
 				fmt.Fprintln(os.Stderr, "error: partychan closed or not set")
 				continue
 			}
-			if len(parametrs) < 2 {
+			if len(parameters) < 2 {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
 			}
-			spam(PARTYCHAN, strings.Join(parametrs[1:], " "))
+			spam(PARTYCHAN, strings.Join(parameters[1:], " "))
 
 		// kline command "t <filename.txt>" posts spam to testchan
 		case "t":
@@ -318,20 +320,20 @@ func main() {
 				fmt.Fprintln(os.Stderr, "error: testchan bots are not voiced, will not proceed")
 				continue
 			}
-			if len(parametrs) < 2 {
+			if len(parameters) < 2 {
 				fmt.Fprintln(os.Stderr, "error: missing file name")
 				continue
 			}
-			spam(TESTCHAN, strings.Join(parametrs[1:], " "))
+			spam(TESTCHAN, strings.Join(parameters[1:], " "))
 
 		// kline command "d <milliseconds>" sets  delay between messages
 		case "d":
-			if len(parametrs) < 2 {
+			if len(parameters) < 2 {
 				fmt.Fprintln(os.Stderr, "error: missing delay")
 				continue
 			}
 			var number int
-			_, err := fmt.Sscanf(parametrs[1], "%d", &number)
+			_, err := fmt.Sscanf(parameters[1], "%d", &number)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "error setting delay:", err)
 				continue
