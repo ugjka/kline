@@ -271,13 +271,17 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				return
 			}
+
 			enc, _ := charset.Lookup(res.Charset)
-			if enc != nil {
-				text, err = enc.NewDecoder().Bytes(text)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					return
-				}
+			if enc == nil {
+				fmt.Fprintln(os.Stderr, "error: unknown encoding")
+				return
+			}
+
+			text, err = enc.NewDecoder().Bytes(text)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return
 			}
 		}
 
