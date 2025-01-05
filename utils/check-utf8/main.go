@@ -8,7 +8,10 @@ import (
 )
 
 func main() {
-	path := os.Args[1]
+	path := "./"
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	}
 	dir, err := os.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
