@@ -257,6 +257,10 @@ func main() {
 	// delicious kline
 	spam := func(channel, file string) { // in a can
 		// yummy!!!
+		if strings.HasPrefix(file, "/dev/") {
+			fmt.Fprintln(os.Stderr, "you a kline daredevil! But not today...")
+			return
+		}
 		text, err := os.ReadFile(file)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
