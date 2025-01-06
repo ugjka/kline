@@ -272,17 +272,16 @@ func main() {
 		// not exact science, may get garbage if something is niche
 		if !utf8.Valid(text) {
 			res, err := chardet.NewTextDetector().DetectBest(text)
-			if err != nil {
-				return
-			}
-
-			enc, err := ianaindex.IANA.Encoding(res.Charset)
-			if enc != nil && err == nil {
-				text, err = enc.NewDecoder().Bytes(text)
-				if err != nil {
-					return
+			if err == nil {
+				enc, err := ianaindex.IANA.Encoding(res.Charset)
+				if enc != nil && err == nil {
+					tmp, err := enc.NewDecoder().Bytes(text)
+					if err == nil {
+						text = tmp
+					}
 				}
 			}
+
 		}
 
 		lines := printdb.get(channel)
