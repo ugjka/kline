@@ -419,6 +419,7 @@ func fakeIdentServer(bindaddress string, count int) error {
 	return nil
 }
 
+// lines of coke
 type lines struct {
 	sync.Mutex
 	lines    [][]byte
@@ -426,6 +427,7 @@ type lines struct {
 	tmpline  []byte
 }
 
+// sniff it in
 func (l *lines) put(data []byte) {
 	l.Lock()
 	l.tmplines = bytes.Split(data, []byte("\n"))
@@ -433,6 +435,7 @@ func (l *lines) put(data []byte) {
 	l.Unlock()
 }
 
+// get your demons out
 func (l *lines) get() []byte {
 	l.Lock()
 	defer l.Unlock()
@@ -445,11 +448,13 @@ func (l *lines) get() []byte {
 	}
 }
 
+// no fortune for you
 type chans struct {
 	sync.Mutex
 	store map[string]*lines
 }
 
+// dibs
 func (c *chans) get(ch string) *lines {
 	c.Lock()
 	defer c.Unlock()
@@ -464,6 +469,7 @@ func (c *chans) get(ch string) *lines {
 	return l
 }
 
+// no dibs
 func (c *chans) clear(ch string) {
 	c.Lock()
 	defer c.Unlock()
