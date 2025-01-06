@@ -1,1 +1,0 @@
-package ansi2mirc
