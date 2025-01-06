@@ -283,7 +283,7 @@ func main() {
 			}
 
 		}
-
+		// schmucky object oriented programming
 		lines := printdb.get(channel)
 		lines.put(text)
 	}
