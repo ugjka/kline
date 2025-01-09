@@ -49,8 +49,18 @@ func main() {
 			m.addrune(text[i])
 		}
 	}
-	m.serialize()
+	m.toirc()
+	var ansicodes []int
+	for k := range unhandled {
+		ansicodes = append(ansicodes, k)
+	}
+	sort.Ints(ansicodes)
+	if len(ansicodes) > 0 {
+		fmt.Fprintln(os.Stderr, "unhandled ansi codes:", ansicodes)
+	}
 }
+
+var unhandled = make(map[int]struct{})
 
 func parse(m *matrix, codes string) {
 	var nums []int
@@ -74,9 +84,8 @@ func parse(m *matrix, codes string) {
 		case num >= 40 && num <= 47:
 			m.bgset(ans2mircmap[num])
 		default:
-			fmt.Fprintln(os.Stderr, "unhandled ansi:", num)
+			unhandled[num] = struct{}{}
 		}
-
 	}
 }
 
@@ -105,20 +114,21 @@ func (m *matrix) bareprint() {
 	}
 }
 
-func (m *matrix) serialize() {
-
+func (m *matrix) toirc() {
 	for _, row := range m.cells {
 		var bold bool
 		var fg int
 		var bg int
 		for i, cell := range row {
 			if i == 0 {
+				// todo: skip background if the same as previous
 				bold = cell.bold
 				if cell.bold {
 					fmt.Print("\x02")
 				}
 				fg = cell.fg
 				bg = cell.bg
+				//todo: only the bg needs to be 2 digits
 				fmt.Printf("\x03%02d,%02d", cell.fg, cell.bg)
 				fmt.Printf("%c", cell.char)
 			}
