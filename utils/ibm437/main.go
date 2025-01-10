@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 		var ansion bool
 		text := []rune(string(data))
 		var codes string
@@ -46,7 +48,12 @@ func main() {
 				codes += string(text[i])
 				continue
 			}
-			m.addrune(text[i])
+			// strip dumbass control chars
+			if text[i] == 10 || text[i] > 31 {
+				m.addrune(text[i])
+			} else {
+				m.addrune(' ')
+			}
 		}
 	}
 	m.toirc()
@@ -80,9 +87,9 @@ func parse(m *matrix, codes string) {
 		case num == 1:
 			m.boldon()
 		case num >= 30 && num <= 37:
-			m.fgset(ans2mircmap[num])
+			m.fgset(num - 30)
 		case num >= 40 && num <= 47:
-			m.bgset(ans2mircmap[num])
+			m.bgset(num - 40)
 		default:
 			unhandled[num] = struct{}{}
 		}
@@ -125,29 +132,48 @@ func (m *matrix) toirc() {
 				bold = cell.bold
 				if cell.bold {
 					fmt.Print("\x02")
+					fg = bold2irc[cell.fg]
+				} else {
+					fg = ans2irc[cell.fg]
 				}
-				fg = cell.fg
-				bg = cell.bg
+				bg = ans2irc[cell.bg]
 				//todo: only the bg needs to be 2 digits
-				fmt.Printf("\x03%02d,%02d", cell.fg, cell.bg)
+				fmt.Printf("\x03%02d,%02d", fg, bg)
 				fmt.Printf("%c", cell.char)
+				continue
 			}
 			if bold != cell.bold {
 				bold = cell.bold
 				fmt.Print("\x02")
 			}
-			if fg != cell.fg || bg != cell.bg {
-				fg = cell.fg
-				bg = cell.bg
-				fmt.Printf("\x03%02d,%02d", fg, bg)
+			if bold {
+				if fg != bold2irc[cell.fg] || bg != ans2irc[cell.bg] {
+					fg = bold2irc[cell.fg]
+					bg = ans2irc[cell.bg]
+					fmt.Printf("\x03%02d,%02d", fg, bg)
+				}
+			} else {
+				if fg != ans2irc[cell.fg] || bg != ans2irc[cell.bg] {
+					fg = ans2irc[cell.fg]
+					bg = ans2irc[cell.bg]
+					fmt.Printf("\x03%02d,%02d", fg, bg)
+				}
 			}
 			fmt.Printf("%c", cell.char)
+			if i == len(row)-1 && len(row) < 80 {
+				spaces := strings.Repeat(" ", 80-len(row))
+				fmt.Printf("\x03%02d,%02d%s", ans2irc[7], ans2irc[0], spaces)
+			}
 		}
 		fmt.Println()
 	}
 }
 
 func (m *matrix) addrune(r rune) {
+	if m.cells == nil {
+		m.cells = make([][]cell, 0)
+		m.cells = append(m.cells, make([]cell, 0))
+	}
 	if r == '\n' {
 		m.cells = append(m.cells, make([]cell, 0))
 		m.row++
@@ -158,10 +184,6 @@ func (m *matrix) addrune(r rune) {
 		bold: m.nowbold,
 		bg:   m.nowbg,
 		fg:   m.nowfg,
-	}
-	if m.cells == nil {
-		m.cells = make([][]cell, 0)
-		m.cells = append(m.cells, make([]cell, 0))
 	}
 	if len(m.cells[m.row]) == 80 {
 		m.cells = append(m.cells, make([]cell, 0))
@@ -184,28 +206,31 @@ func (m *matrix) fgset(i int) {
 
 func (m *matrix) reset() {
 	m.nowbold = false
-	m.nowfg = 15
-	m.nowbg = 1
+	m.nowfg = 7
+	m.nowbg = 0
 }
 
 const cols = 80
 const esc rune = '\x1b'
 
-var ans2mircmap = map[int]int{
-	30: 1,
-	31: 4,
-	32: 9,
-	33: 8,
-	34: 12,
-	35: 13,
-	36: 11,
-	37: 15,
-	40: 1,
-	41: 5,
-	42: 3,
-	43: 7,
-	44: 2,
-	45: 6,
-	46: 10,
-	47: 14,
+var ans2irc = []int{
+	88,
+	40,
+	44,
+	41,
+	48,
+	50,
+	46,
+	96,
+}
+
+var bold2irc = []int{
+	94,
+	64,
+	56,
+	54,
+	72,
+	74,
+	70,
+	00,
 }
