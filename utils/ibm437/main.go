@@ -126,6 +126,7 @@ func (m *matrix) toirc() {
 		var bold bool
 		var fg int
 		var bg int
+		var oldbg int
 		for i, cell := range row {
 			if i == 0 {
 				// todo: skip background if the same as previous
@@ -137,6 +138,7 @@ func (m *matrix) toirc() {
 					fg = ans2irc[cell.fg]
 				}
 				bg = ans2irc[cell.bg]
+				oldbg = bg
 				//todo: only the bg needs to be 2 digits
 				fmt.Printf("\x03%02d,%02d", fg, bg)
 				fmt.Printf("%c", cell.char)
@@ -150,13 +152,23 @@ func (m *matrix) toirc() {
 				if fg != bold2irc[cell.fg] || bg != ans2irc[cell.bg] {
 					fg = bold2irc[cell.fg]
 					bg = ans2irc[cell.bg]
-					fmt.Printf("\x03%02d,%02d", fg, bg)
+					if oldbg == bg {
+						fmt.Printf("\x03%02d", fg)
+					} else {
+						oldbg = bg
+						fmt.Printf("\x03%02d,%02d", fg, bg)
+					}
 				}
 			} else {
 				if fg != ans2irc[cell.fg] || bg != ans2irc[cell.bg] {
 					fg = ans2irc[cell.fg]
 					bg = ans2irc[cell.bg]
-					fmt.Printf("\x03%02d,%02d", fg, bg)
+					if oldbg == bg {
+						fmt.Printf("\x03%02d", fg)
+					} else {
+						oldbg = bg
+						fmt.Printf("\x03%02d,%02d", fg, bg)
+					}
 				}
 			}
 			fmt.Printf("%c", cell.char)
