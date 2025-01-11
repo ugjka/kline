@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"unicode"
 
 	"golang.org/x/text/encoding/ianaindex"
 )
@@ -19,6 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 	m := &matrix{}
+	m.init()
 	enc, err := ianaindex.IANA.Encoding("IBM437")
 	if enc != nil && err == nil {
 		data, err = enc.NewDecoder().Bytes(data)
@@ -26,37 +28,67 @@ func main() {
 			log.Fatal(err)
 		}
 		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-		var ansion bool
+		var isansi bool
 		text := []rune(string(data))
 		var codes string
+	loop:
 		for i := 0; i < len(text); i++ {
 			// ansi prefix
 			if i+1 < len(text) && text[i] == esc && text[i+1] == '[' {
 				i++
-				ansion = true
+				isansi = true
 				continue
 			}
+
+			switch {
 			// ansi suffix
-			if ansion && text[i] == 'm' {
-				ansion = false
-				parse(m, codes)
+			case isansi && text[i] == 'm':
+				isansi = false
+				colors(m, codes)
 				codes = ""
-				continue
+				continue loop
+
+			// char forward move suffix
+			case isansi && text[i] == 'C':
+				var moves int
+				_, err := fmt.Sscanf(codes, "%d", &moves)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "ansi char move:", err)
+				} else {
+					for range moves {
+						m.addrune(' ')
+					}
+				}
+				isansi = false
+				codes = ""
+				continue loop
+			// no op
+			case isansi && unicode.IsLetter(text[i]):
+				fmt.Fprintln(os.Stderr, "unknow ansi operation:", string(text[i]), codes)
+				isansi = false
+				codes = ""
+				continue loop
 			}
+
 			// gather ansi codes
-			if ansion {
+			if isansi {
 				codes += string(text[i])
 				continue
 			}
+
 			// strip dumbass control chars
-			if text[i] == 10 || text[i] > 31 {
-				m.addrune(text[i])
-			} else {
-				m.addrune(' ')
-			}
+			// if text[i] == 10 || text[i] > 31 {
+			// 	m.addrune(text[i])
+			// } else {
+			// 	m.addrune(' ')
+			// }
+			m.addrune(text[i])
 		}
 	}
+
+	//m.bareprint()
 	m.toirc()
+
 	var ansicodes []int
 	for k := range unhandled {
 		ansicodes = append(ansicodes, k)
@@ -69,7 +101,7 @@ func main() {
 
 var unhandled = make(map[int]struct{})
 
-func parse(m *matrix, codes string) {
+func colors(m *matrix, codes string) {
 	var nums []int
 	for _, str := range strings.Split(codes, ";") {
 		var i int
@@ -96,112 +128,123 @@ func parse(m *matrix, codes string) {
 	}
 }
 
-type cell struct {
-	char rune
-	bold bool
-	bg   int
-	fg   int
-}
-
-type matrix struct {
-	cells   [][]cell
-	nowbg   int
-	nowfg   int
-	nowbold bool
-	cols    int
-	row     int
-}
-
 func (m *matrix) bareprint() {
-	for i := range m.cells {
-		for j := range m.cells[i] {
-			fmt.Printf("%c", m.cells[i][j].char)
+	for i := range m.rows {
+		for j := range m.rows[i] {
+			if !m.rows[i][j].set {
+				fmt.Print("?")
+			}
+			fmt.Printf("%c", m.rows[i][j].char)
 		}
 		fmt.Println()
 	}
 }
 
 func (m *matrix) toirc() {
-	for _, row := range m.cells {
-		var bold bool
-		var fg int
-		var bg int
-		var oldbg int
+	var bold bool = false
+	var fg int = ans2irc[7]
+	var bg int = ans2irc[0]
+	var oldbg int = ans2irc[0]
+	for _, row := range m.rows {
 		for i, cell := range row {
+			// init first char because irc doesn't
+			// carry over formating to next line
 			if i == 0 {
-				// todo: skip background if the same as previous
-				bold = cell.bold
-				if cell.bold {
+				if !cell.set {
+					cell.char = ' '
+				}
+				if bold != cell.bold {
+					bold = cell.bold
 					fmt.Print("\x02")
+				}
+				if bold && fg != bold2irc[cell.fg] {
 					fg = bold2irc[cell.fg]
-				} else {
+				} else if !bold && fg != ans2irc[cell.fg] {
 					fg = ans2irc[cell.fg]
 				}
-				bg = ans2irc[cell.bg]
-				oldbg = bg
-				//todo: only the bg needs to be 2 digits
-				fmt.Printf("\x03%02d,%02d", fg, bg)
-				fmt.Printf("%c", cell.char)
+				if bg != ans2irc[cell.bg] {
+					bg = ans2irc[cell.bg]
+					oldbg = bg
+				}
+				fmt.Printf("\x03%02d,%02d%c", fg, bg, cell.char)
+				_ = oldbg
 				continue
 			}
+
+			// i bet this is hard to follow...
+			if !cell.set {
+				cell.char = ' '
+			}
+
 			if bold != cell.bold {
-				bold = cell.bold
 				fmt.Print("\x02")
+				bold = cell.bold
 			}
-			if bold {
-				if fg != bold2irc[cell.fg] || bg != ans2irc[cell.bg] {
-					fg = bold2irc[cell.fg]
-					bg = ans2irc[cell.bg]
-					if oldbg == bg {
-						fmt.Printf("\x03%02d", fg)
-					} else {
-						oldbg = bg
-						fmt.Printf("\x03%02d,%02d", fg, bg)
-					}
-				}
-			} else {
-				if fg != ans2irc[cell.fg] || bg != ans2irc[cell.bg] {
-					fg = ans2irc[cell.fg]
-					bg = ans2irc[cell.bg]
-					if oldbg == bg {
-						fmt.Printf("\x03%02d", fg)
-					} else {
-						oldbg = bg
-						fmt.Printf("\x03%02d,%02d", fg, bg)
-					}
-				}
+
+			if bold && fg != bold2irc[cell.fg] {
+				fg = bold2irc[cell.fg]
+				fmt.Printf("\x03%02d", fg)
+			} else if !bold && fg != ans2irc[cell.fg] {
+				fg = ans2irc[cell.fg]
+				fmt.Printf("\x03%02d", fg)
+			} else if bg != ans2irc[cell.bg] {
+				fmt.Printf("\x03%02d", fg)
 			}
+
+			if bg != ans2irc[cell.bg] {
+				bg = ans2irc[cell.bg]
+				if bg != oldbg {
+					fmt.Printf(",%02d", bg)
+				}
+				oldbg = bg
+			}
+
 			fmt.Printf("%c", cell.char)
-			if i == len(row)-1 && len(row) < 80 {
-				spaces := strings.Repeat(" ", 80-len(row))
-				fmt.Printf("\x03%02d,%02d%s", ans2irc[7], ans2irc[0], spaces)
-			}
 		}
 		fmt.Println()
 	}
 }
 
-func (m *matrix) addrune(r rune) {
-	if m.cells == nil {
-		m.cells = make([][]cell, 0)
-		m.cells = append(m.cells, make([]cell, 0))
+func (m *matrix) init() {
+	m.rows = make([][]cell, 0)
+	m.newrow()
+	m.nowfg = ans2irc[7]
+	m.nowbg = ans2irc[0]
+}
+
+func (m *matrix) newrow() {
+	var row []cell
+	for range cols {
+		row = append(row, cell{})
 	}
+	m.rows = append(m.rows, row)
+}
+
+func (m *matrix) addrune(r rune) {
 	if r == '\n' {
-		m.cells = append(m.cells, make([]cell, 0))
-		m.row++
+		m.currow++
+		if len(m.rows)-1 < m.currow {
+			m.newrow()
+			m.curcol = 0
+		}
 		return
 	}
 	c := cell{
 		char: r,
 		bold: m.nowbold,
-		bg:   m.nowbg,
 		fg:   m.nowfg,
+		bg:   m.nowbg,
+		set:  true,
 	}
-	if len(m.cells[m.row]) == 80 {
-		m.cells = append(m.cells, make([]cell, 0))
-		m.row++
+	m.rows[m.currow][m.curcol] = c
+	m.curcol++
+	if m.curcol == cols {
+		m.curcol = 0
+		m.currow++
+		if len(m.rows)-1 < m.currow {
+			m.newrow()
+		}
 	}
-	m.cells[m.row] = append(m.cells[m.row], c)
 }
 
 func (m *matrix) boldon() {
@@ -220,6 +263,23 @@ func (m *matrix) reset() {
 	m.nowbold = false
 	m.nowfg = 7
 	m.nowbg = 0
+}
+
+type cell struct {
+	char rune
+	bold bool
+	bg   int
+	fg   int
+	set  bool
+}
+
+type matrix struct {
+	rows    [][]cell
+	nowbg   int
+	nowfg   int
+	nowbold bool
+	currow  int
+	curcol  int
 }
 
 const cols = 80
