@@ -76,13 +76,11 @@ func main() {
 				continue
 			}
 
-			// strip dumbass control chars
-			// if text[i] == 10 || text[i] > 31 {
-			// 	m.addrune(text[i])
-			// } else {
-			// 	m.addrune(' ')
-			// }
-			m.addrune(text[i])
+			if text[i] < 4 || text[i] == '\x1A' {
+				m.addrune(' ')
+			} else {
+				m.addrune(text[i])
+			}
 		}
 	}
 
