@@ -55,9 +55,18 @@ func main() {
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "ansi char move:", err)
 				} else {
-					for range moves {
-						m.addrune(' ')
-					}
+					m.move(moves)
+				}
+				isansi = false
+				codes = ""
+				continue loop
+			case isansi && text[i] == 'A':
+				var moves int
+				_, err := fmt.Sscanf(codes, "%d", &moves)
+				if err != nil {
+					m.up(1)
+				} else {
+					m.up(moves)
 				}
 				isansi = false
 				codes = ""
@@ -216,6 +225,24 @@ func (m *matrix) newrow() {
 		row = append(row, cell{})
 	}
 	m.rows = append(m.rows, row)
+}
+
+func (m *matrix) move(i int) {
+	for range i {
+		m.curcol++
+		if m.curcol == cols {
+			if len(m.rows)-1 == m.currow {
+				m.newrow()
+			} else {
+				m.currow++
+			}
+			m.curcol = 0
+		}
+	}
+}
+
+func (m *matrix) up(i int) {
+	m.currow -= i
 }
 
 func (m *matrix) addrune(r rune) {
