@@ -169,7 +169,6 @@ func (m *matrix) toirc() {
 				continue
 			}
 
-			// i bet this is hard to follow...
 			if !cell.set {
 				cell.char = ' '
 			}
@@ -179,6 +178,7 @@ func (m *matrix) toirc() {
 				bold = cell.bold
 			}
 
+			// i bet this is hard to follow...
 			if bold && fg != bold2irc[cell.fg] {
 				fg = bold2irc[cell.fg]
 				fmt.Printf("\x03%02d", fg)
