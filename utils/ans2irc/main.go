@@ -32,10 +32,12 @@ func main() {
 		var isansi bool
 		text := []rune(string(data))
 		var codes string
+
+		// parse loop
 	loop:
 		for i := 0; i < len(text); i++ {
 			// ansi prefix
-			if i+1 < len(text) && text[i] == esc && text[i+1] == '[' {
+			if i+1 < len(text) && text[i] == '\x1b' && text[i+1] == '[' {
 				i++
 				isansi = true
 				continue
@@ -93,9 +95,10 @@ func main() {
 				m.addrune(text[i])
 			}
 		}
+	} else {
+		fmt.Fprintln(os.Stderr, err)
 	}
 
-	//m.bareprint()
 	m.toirc()
 
 	var ansicodes []int
@@ -134,18 +137,6 @@ func formatting(m *matrix, codes string) {
 		default:
 			unhandled[num] = struct{}{}
 		}
-	}
-}
-
-func (m *matrix) bareprint() {
-	for i := range m.rows {
-		for j := range m.rows[i] {
-			if !m.rows[i][j].set {
-				fmt.Print("?")
-			}
-			fmt.Printf("%c", m.rows[i][j].char)
-		}
-		fmt.Println()
 	}
 }
 
@@ -226,7 +217,7 @@ func (m *matrix) init() {
 
 func (m *matrix) newrow() {
 	var row []cell
-	for range cols {
+	for range COLUMNS {
 		row = append(row, cell{})
 	}
 	m.rows = append(m.rows, row)
@@ -235,7 +226,7 @@ func (m *matrix) newrow() {
 func (m *matrix) move(i int) {
 	for range i {
 		m.curcol++
-		if m.curcol == cols {
+		if m.curcol == COLUMNS {
 			if len(m.rows)-1 == m.currow {
 				m.newrow()
 				m.currow++
@@ -269,7 +260,7 @@ func (m *matrix) addrune(r rune) {
 	}
 	m.rows[m.currow][m.curcol] = c
 	m.curcol++
-	if m.curcol == cols {
+	if m.curcol == COLUMNS {
 		m.curcol = 0
 		m.currow++
 		if len(m.rows)-1 < m.currow {
@@ -313,8 +304,7 @@ type matrix struct {
 	curcol  int
 }
 
-const cols = 80
-const esc rune = '\x1b'
+const COLUMNS = 80
 
 var ans2irc = []int{
 	88,
