@@ -99,7 +99,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 	}
 
-	m.toirc()
+	m.format2irc()
 
 	var ansicodes []int
 	for k := range unhandled {
@@ -140,7 +140,7 @@ func formatting(m *matrix, codes string) {
 	}
 }
 
-func (m *matrix) toirc() {
+func (m *matrix) format2irc() {
 	var bold bool = false
 	var fg int = ans2irc[7]
 	var bg int = ans2irc[0]
