@@ -187,6 +187,7 @@ func (m *matrix) format2irc() {
 				bold = cell.bold
 			}
 
+			// it is hard to think about
 			switch {
 			case bold && fg != bold2irc[cell.fg]:
 				fg = bold2irc[cell.fg]
