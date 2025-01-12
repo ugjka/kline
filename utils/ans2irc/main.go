@@ -31,7 +31,7 @@ func main() {
 		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 		var isansi bool
 		text := []rune(string(data))
-		var codes string
+		var params string
 
 		// parse loop
 	loop:
@@ -47,45 +47,45 @@ func main() {
 			// formatting
 			case isansi && text[i] == 'm':
 				isansi = false
-				formatting(m, codes)
-				codes = ""
+				formatting(m, params)
+				params = ""
 				continue loop
 
 			// char forward
 			case isansi && text[i] == 'C':
 				var moves int
-				_, err := fmt.Sscanf(codes, "%d", &moves)
+				_, err := fmt.Sscanf(params, "%d", &moves)
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "ansi char move:", err)
 				} else {
 					m.cursormove(moves)
 				}
 				isansi = false
-				codes = ""
+				params = ""
 				continue loop
 			// move up
 			case isansi && text[i] == 'A':
 				var moves int
-				_, err := fmt.Sscanf(codes, "%d", &moves)
+				_, err := fmt.Sscanf(params, "%d", &moves)
 				if err != nil {
 					m.cursorup(1)
 				} else {
 					m.cursorup(moves)
 				}
 				isansi = false
-				codes = ""
+				params = ""
 				continue loop
 			// no op
 			case isansi && unicode.IsLetter(text[i]):
 				fmt.Fprintln(os.Stderr, "unhandled ansi operation:", string(text[i]), " ")
 				isansi = false
-				codes = ""
+				params = ""
 				continue loop
 			}
 
-			// gather ansi codes
+			// gather parameters
 			if isansi {
-				codes += string(text[i])
+				params += string(text[i])
 				continue
 			}
 
