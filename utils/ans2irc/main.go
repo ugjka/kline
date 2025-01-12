@@ -229,10 +229,8 @@ func (m *matrix) cursormove(i int) {
 		if m.curcol == COLUMNS {
 			if len(m.rows)-1 == m.currow {
 				m.newrow()
-				m.currow++
-			} else {
-				m.currow++
 			}
+			m.currow++
 			m.curcol = 0
 		}
 	}
