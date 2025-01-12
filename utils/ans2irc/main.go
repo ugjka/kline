@@ -75,7 +75,7 @@ func main() {
 				continue loop
 			// no op
 			case isansi && unicode.IsLetter(text[i]):
-				fmt.Fprintln(os.Stderr, "unknow ansi operation:", string(text[i]), codes)
+				fmt.Fprintln(os.Stderr, "unhandled ansi operation:", string(text[i]), " ")
 				isansi = false
 				codes = ""
 				continue loop
@@ -104,7 +104,7 @@ func main() {
 	}
 	sort.Ints(ansicodes)
 	if len(ansicodes) > 0 {
-		fmt.Fprintln(os.Stderr, "unhandled ansi codes:", ansicodes)
+		fmt.Fprintln(os.Stderr, "unhandled ansi formatting:", ansicodes)
 	}
 }
 
