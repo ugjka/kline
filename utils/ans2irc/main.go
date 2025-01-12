@@ -1,3 +1,4 @@
+// Convert ANSI art to irc colors
 package main
 
 import (
@@ -205,7 +206,6 @@ func (m *matrix) toirc() {
 				}
 				oldbg = bg
 			}
-
 			fmt.Printf("%c", cell.char)
 		}
 		fmt.Println()
