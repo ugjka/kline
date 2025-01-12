@@ -216,8 +216,8 @@ func (m *matrix) toirc() {
 func (m *matrix) init() {
 	m.rows = make([][]cell, 0)
 	m.newrow()
-	m.nowfg = ans2irc[7]
-	m.nowbg = ans2irc[0]
+	m.nowfg = 7
+	m.nowbg = 0
 }
 
 func (m *matrix) newrow() {
