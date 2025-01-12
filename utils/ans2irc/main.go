@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,9 +14,15 @@ import (
 	"golang.org/x/text/encoding/ianaindex"
 )
 
+var COLUMNS *int
+
 func main() {
+	COLUMNS = flag.Int("cols", 80, "column count in ansi artwork")
+
+	flag.Parse()
+
 	// pass filename as arg
-	file := os.Args[1]
+	file := flag.Args()[0]
 	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
@@ -217,7 +224,7 @@ func (m *matrix) init() {
 
 func (m *matrix) newrow() {
 	var row []cell
-	for range COLUMNS {
+	for range *COLUMNS {
 		row = append(row, cell{})
 	}
 	m.rows = append(m.rows, row)
@@ -226,7 +233,7 @@ func (m *matrix) newrow() {
 func (m *matrix) cursormove(i int) {
 	for range i {
 		m.curcol++
-		if m.curcol == COLUMNS {
+		if m.curcol == *COLUMNS {
 			if len(m.rows)-1 == m.currow {
 				m.newrow()
 			}
@@ -258,7 +265,7 @@ func (m *matrix) addrune(r rune) {
 	}
 	m.rows[m.currow][m.curcol] = c
 	m.curcol++
-	if m.curcol == COLUMNS {
+	if m.curcol == *COLUMNS {
 		if len(m.rows)-1 == m.currow {
 			m.newrow()
 		}
@@ -301,8 +308,6 @@ type matrix struct {
 	currow  int
 	curcol  int
 }
-
-const COLUMNS = 80
 
 var ans2irc = []int{
 	88,
