@@ -247,8 +247,8 @@ func (m *matrix) addrune(r rune) {
 		m.currow++
 		if len(m.rows)-1 < m.currow {
 			m.newrow()
-			m.curcol = 0
 		}
+		m.curcol = 0
 		return
 	}
 	c := cell{
