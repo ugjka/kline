@@ -58,7 +58,7 @@ func main() {
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "ansi char move:", err)
 				} else {
-					m.move(moves)
+					m.cursormove(moves)
 				}
 				isansi = false
 				codes = ""
@@ -68,9 +68,9 @@ func main() {
 				var moves int
 				_, err := fmt.Sscanf(codes, "%d", &moves)
 				if err != nil {
-					m.up(1)
+					m.cursorup(1)
 				} else {
-					m.up(moves)
+					m.cursorup(moves)
 				}
 				isansi = false
 				codes = ""
@@ -129,11 +129,11 @@ func formatting(m *matrix, codes string) {
 		case num == 0:
 			m.reset()
 		case num == 1:
-			m.boldon()
+			m.setbold()
 		case num >= 30 && num <= 37:
-			m.fgset(num - 30)
+			m.setfg(num - 30)
 		case num >= 40 && num <= 47:
-			m.bgset(num - 40)
+			m.setbg(num - 40)
 		default:
 			unhandled[num] = struct{}{}
 		}
@@ -223,7 +223,7 @@ func (m *matrix) newrow() {
 	m.rows = append(m.rows, row)
 }
 
-func (m *matrix) move(i int) {
+func (m *matrix) cursormove(i int) {
 	for range i {
 		m.curcol++
 		if m.curcol == COLUMNS {
@@ -238,7 +238,7 @@ func (m *matrix) move(i int) {
 	}
 }
 
-func (m *matrix) up(i int) {
+func (m *matrix) cursorup(i int) {
 	m.currow -= i
 }
 
@@ -269,15 +269,15 @@ func (m *matrix) addrune(r rune) {
 	}
 }
 
-func (m *matrix) boldon() {
+func (m *matrix) setbold() {
 	m.nowbold = true
 }
 
-func (m *matrix) bgset(i int) {
+func (m *matrix) setbg(i int) {
 	m.nowbg = i
 }
 
-func (m *matrix) fgset(i int) {
+func (m *matrix) setfg(i int) {
 	m.nowfg = i
 }
 
