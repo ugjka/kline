@@ -188,14 +188,14 @@ func (m *matrix) toirc() {
 				bold = cell.bold
 			}
 
-			// i bet this is hard to follow...
-			if bold && fg != bold2irc[cell.fg] {
+			switch {
+			case bold && fg != bold2irc[cell.fg]:
 				fg = bold2irc[cell.fg]
 				fmt.Printf("\x03%02d", fg)
-			} else if !bold && fg != ans2irc[cell.fg] {
+			case !bold && fg != ans2irc[cell.fg]:
 				fg = ans2irc[cell.fg]
 				fmt.Printf("\x03%02d", fg)
-			} else if bg != ans2irc[cell.bg] {
+			case bg != ans2irc[cell.bg]:
 				fmt.Printf("\x03%02d", fg)
 			}
 
