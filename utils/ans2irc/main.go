@@ -196,17 +196,21 @@ func (m *matrix) toirc() {
 			case !bold && fg != ans2irc[cell.fg]:
 				fg = ans2irc[cell.fg]
 				fmt.Printf("\x03%02d", fg)
-			case bg != ans2irc[cell.bg]:
+			case bg != ans2irc[cell.bg] && !(fg == ans2irc[cell.bg] && cell.char == ' '):
 				fmt.Printf("\x03%02d", fg)
 			}
 
-			if bg != ans2irc[cell.bg] {
+			switch {
+			case fg == ans2irc[cell.bg] && cell.char == ' ':
+				cell.char = '█'
+			case bg != ans2irc[cell.bg]:
 				bg = ans2irc[cell.bg]
 				if bg != oldbg {
 					fmt.Printf(",%02d", bg)
 				}
 				oldbg = bg
 			}
+
 			fmt.Printf("%c", cell.char)
 		}
 		fmt.Println()
