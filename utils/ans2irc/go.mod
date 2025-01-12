@@ -1,4 +1,4 @@
-module ibm437
+module ans2irc
 
 go 1.23.4
 
