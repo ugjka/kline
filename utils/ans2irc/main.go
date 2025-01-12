@@ -242,10 +242,10 @@ func (m *matrix) cursorup(i int) {
 
 func (m *matrix) addrune(r rune) {
 	if r == '\n' {
-		m.currow++
-		if len(m.rows)-1 < m.currow {
+		if len(m.rows)-1 == m.currow {
 			m.newrow()
 		}
+		m.currow++
 		m.curcol = 0
 		return
 	}
@@ -259,11 +259,11 @@ func (m *matrix) addrune(r rune) {
 	m.rows[m.currow][m.curcol] = c
 	m.curcol++
 	if m.curcol == COLUMNS {
-		m.curcol = 0
-		m.currow++
-		if len(m.rows)-1 < m.currow {
+		if len(m.rows)-1 == m.currow {
 			m.newrow()
 		}
+		m.currow++
+		m.curcol = 0
 	}
 }
 
