@@ -42,14 +42,14 @@ func main() {
 			}
 
 			switch {
-			// ansi suffix
+			// formatting
 			case isansi && text[i] == 'm':
 				isansi = false
-				colors(m, codes)
+				formatting(m, codes)
 				codes = ""
 				continue loop
 
-			// char forward move suffix
+			// char forward
 			case isansi && text[i] == 'C':
 				var moves int
 				_, err := fmt.Sscanf(codes, "%d", &moves)
@@ -61,6 +61,7 @@ func main() {
 				isansi = false
 				codes = ""
 				continue loop
+			// move up
 			case isansi && text[i] == 'A':
 				var moves int
 				_, err := fmt.Sscanf(codes, "%d", &moves)
@@ -109,7 +110,7 @@ func main() {
 
 var unhandled = make(map[int]struct{})
 
-func colors(m *matrix, codes string) {
+func formatting(m *matrix, codes string) {
 	var nums []int
 	for _, str := range strings.Split(codes, ";") {
 		var i int
@@ -233,6 +234,7 @@ func (m *matrix) move(i int) {
 		if m.curcol == cols {
 			if len(m.rows)-1 == m.currow {
 				m.newrow()
+				m.currow++
 			} else {
 				m.currow++
 			}
