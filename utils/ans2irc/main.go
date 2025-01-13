@@ -17,6 +17,7 @@ var COLUMNS *int
 
 func main() {
 	COLUMNS = flag.Int("cols", 80, "column count in ansi artwork")
+	*COLUMNS -= 1
 
 	flag.Parse()
 
@@ -307,13 +308,13 @@ func (m *matrix) init() {
 }
 
 func (m *matrix) newrow() {
-	m.rows = append(m.rows, make([]cell, *COLUMNS))
+	m.rows = append(m.rows, make([]cell, *COLUMNS+1))
 }
 
 func (m *matrix) forward(i int) {
 	m.curcol += i
-	if m.curcol > *COLUMNS-1 {
-		m.curcol = *COLUMNS - 1
+	if m.curcol > *COLUMNS {
+		m.curcol = *COLUMNS
 	}
 }
 
@@ -366,8 +367,8 @@ func (m *matrix) position(codes string) (err error) {
 			m.newrow()
 		}
 	}
-	if col > *COLUMNS-1 {
-		col = *COLUMNS - 1
+	if col > *COLUMNS {
+		col = *COLUMNS
 	}
 	m.currow = row
 	m.curcol = col
@@ -392,7 +393,7 @@ func (m *matrix) addrune(r rune) {
 	}
 	m.rows[m.currow][m.curcol] = c
 	m.curcol++
-	if m.curcol == *COLUMNS {
+	if m.curcol > *COLUMNS {
 		if len(m.rows)-1 == m.currow {
 			m.newrow()
 		}
