@@ -228,16 +228,12 @@ func (m *matrix) newrow() {
 }
 
 func (m *matrix) cursormove(i int) {
-	for range i {
-		m.curcol++
-		if m.curcol == *COLUMNS {
-			if len(m.rows)-1 == m.currow {
-				m.newrow()
-			}
-			m.currow++
-			m.curcol = 0
-		}
+	m.curcol += i
+	for range m.curcol / *COLUMNS {
+		m.newrow()
+		m.currow++
 	}
+	m.curcol = m.curcol % *COLUMNS
 }
 
 func (m *matrix) cursorup(i int) {
