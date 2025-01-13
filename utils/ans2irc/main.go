@@ -75,7 +75,38 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-
+		// set cursor position
+		case isansi && text[i] == 'H':
+			m.position(params)
+			isansi = false
+			params = ""
+			continue loop
+		// cursor up
+		case isansi && text[i] == 'A':
+			var moves int
+			if params == "" {
+				m.up(1)
+			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
+				fmt.Fprintln(os.Stderr, "ansi A:", err)
+			} else {
+				m.up(moves)
+			}
+			isansi = false
+			params = ""
+			continue loop
+			// cursor down
+		case isansi && text[i] == 'B':
+			var moves int
+			if params == "" {
+				m.down(1)
+			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
+				fmt.Fprintln(os.Stderr, "ansi B:", err)
+			} else {
+				m.down(moves)
+			}
+			isansi = false
+			params = ""
+			continue loop
 		// cursor forward
 		case isansi && text[i] == 'C':
 			var moves int
@@ -89,15 +120,15 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-		// cursor up
-		case isansi && text[i] == 'A':
+			// cursor forward
+		case isansi && text[i] == 'D':
 			var moves int
 			if params == "" {
-				m.up(1)
+				m.backward(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
-				fmt.Fprintln(os.Stderr, "ansi A:", err)
+				fmt.Fprintln(os.Stderr, "ansi D:", err)
 			} else {
-				m.up(moves)
+				m.backward(moves)
 			}
 			isansi = false
 			params = ""
@@ -116,11 +147,10 @@ loop:
 			continue loop
 		}
 
-		if text[i] < 4 || text[i] == '\x1A' {
-			m.addrune(' ')
-		} else {
-			m.addrune(text[i])
+		if text[i] == '\x1A' {
+			break loop
 		}
+		m.addrune(text[i])
 	}
 
 	m.format2irc()
@@ -245,11 +275,16 @@ func (m *matrix) newrow() {
 
 func (m *matrix) forward(i int) {
 	m.curcol += i
-	for range m.curcol / *COLUMNS {
-		m.newrow()
-		m.currow++
+	if m.curcol > *COLUMNS-1 {
+		m.curcol = *COLUMNS - 1
 	}
-	m.curcol = m.curcol % *COLUMNS
+}
+
+func (m *matrix) backward(i int) {
+	m.curcol -= i
+	if m.curcol < 0 {
+		m.curcol = 0
+	}
 }
 
 func (m *matrix) up(i int) {
@@ -257,6 +292,51 @@ func (m *matrix) up(i int) {
 	if m.currow < 0 {
 		m.currow = 0
 	}
+}
+
+func (m *matrix) down(i int) {
+	m.currow += i
+	i = m.currow - len(m.rows) + 1
+	for range i {
+		m.newrow()
+	}
+}
+
+func (m *matrix) position(codes string) {
+	if strings.HasPrefix(codes, ";") {
+		codes = "0" + codes
+	}
+	if strings.HasSuffix(codes, ";") {
+		codes = codes + "0"
+	}
+	if codes == "" {
+		codes = "0;0"
+	}
+	var row int
+	var col int
+	_, err := fmt.Sscanf(codes, "%d;%d", &row, &col)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "position H:", err, codes)
+	}
+	row -= 1
+	col -= 1
+	if row < 0 {
+		row = 0
+	}
+	if col < 0 {
+		col = 0
+	}
+	if row > len(m.rows)-1 {
+		tmp := row - len(m.rows) + 1
+		for range tmp {
+			m.newrow()
+		}
+	}
+	if col > *COLUMNS-1 {
+		col = *COLUMNS - 1
+	}
+	m.currow = row
+	m.curcol = col
 }
 
 func (m *matrix) addrune(r rune) {
