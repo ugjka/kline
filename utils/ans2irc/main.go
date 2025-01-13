@@ -110,7 +110,7 @@ loop:
 		// gather parameters
 		if isansi {
 			params += string(text[i])
-			continue
+			continue loop
 		}
 
 		if text[i] < 4 || text[i] == '\x1A' {
