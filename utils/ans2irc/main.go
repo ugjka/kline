@@ -251,6 +251,9 @@ func (m *matrix) cursormove(i int) {
 
 func (m *matrix) cursorup(i int) {
 	m.currow -= i
+	if m.currow < 0 {
+		m.currow = 0
+	}
 }
 
 func (m *matrix) addrune(r rune) {
