@@ -35,7 +35,7 @@ func main() {
 
 	enc, err := ianaindex.IANA.Encoding("IBM437")
 	if enc == nil || err != nil {
-		fmt.Fprintln(os.Stderr, "error: IBM437 encoding not found!", err)
+		fmt.Fprintln(os.Stderr, "error: IBM437 encoding not supported!", err)
 		os.Exit(1)
 	}
 
