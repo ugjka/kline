@@ -304,13 +304,13 @@ func (m *matrix) down(i int) {
 
 func (m *matrix) position(codes string) {
 	if strings.HasPrefix(codes, ";") {
-		codes = "0" + codes
+		codes = "1" + codes
 	}
 	if strings.HasSuffix(codes, ";") {
-		codes = codes + "0"
+		codes = codes + "1"
 	}
 	if codes == "" {
-		codes = "0;0"
+		codes = "1;1"
 	}
 	var row int
 	var col int
