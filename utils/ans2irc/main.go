@@ -76,28 +76,28 @@ loop:
 			params = ""
 			continue loop
 
-		// char forward
+		// cursor forward
 		case isansi && text[i] == 'C':
 			var moves int
 			if params == "" {
-				m.cursormove(1)
+				m.forward(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
 				fmt.Fprintln(os.Stderr, "ansi C:", err)
 			} else {
-				m.cursormove(moves)
+				m.forward(moves)
 			}
 			isansi = false
 			params = ""
 			continue loop
-		// move up
+		// cursor up
 		case isansi && text[i] == 'A':
 			var moves int
 			if params == "" {
-				m.cursorup(1)
+				m.up(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
 				fmt.Fprintln(os.Stderr, "ansi A:", err)
 			} else {
-				m.cursorup(moves)
+				m.up(moves)
 			}
 			isansi = false
 			params = ""
@@ -243,7 +243,7 @@ func (m *matrix) newrow() {
 	m.rows = append(m.rows, make([]cell, *COLUMNS))
 }
 
-func (m *matrix) cursormove(i int) {
+func (m *matrix) forward(i int) {
 	m.curcol += i
 	for range m.curcol / *COLUMNS {
 		m.newrow()
@@ -252,7 +252,7 @@ func (m *matrix) cursormove(i int) {
 	m.curcol = m.curcol % *COLUMNS
 }
 
-func (m *matrix) cursorup(i int) {
+func (m *matrix) up(i int) {
 	m.currow -= i
 	if m.currow < 0 {
 		m.currow = 0
