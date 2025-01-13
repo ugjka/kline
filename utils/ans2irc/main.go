@@ -57,6 +57,8 @@ func main() {
 	m := &matrix{}
 	m.init()
 
+	//var irccontrol = []rune{'\x02', '\x1d', '\x1f', '\x1e', '\x11', '\x03', '\x04', '\x16', '\x0f'}
+	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
 	// parse loop
 loop:
 	for i := 0; i < len(text); i++ {
@@ -68,6 +70,18 @@ loop:
 		}
 
 		switch {
+		// save cursor position
+		case isansi && text[i] == 's':
+			m.save()
+			isansi = false
+			params = ""
+			continue loop
+		// restore cursor position
+		case isansi && text[i] == 'u':
+			m.restore()
+			isansi = false
+			params = ""
+			continue loop
 		// formatting
 		case isansi && text[i] == 'm':
 			u := formatting(m, params)
@@ -150,7 +164,11 @@ loop:
 		if text[i] == '\x1A' {
 			break loop
 		}
-		m.addrune(text[i])
+		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
+			m.addrune(cp437[text[i]])
+		} else {
+			m.addrune(text[i])
+		}
 	}
 
 	m.format2irc()
@@ -384,6 +402,16 @@ func (m *matrix) reset() {
 	m.nowbg = 0
 }
 
+func (m *matrix) save() {
+	m.savecol = m.curcol
+	m.saverow = m.currow
+}
+
+func (m *matrix) restore() {
+	m.curcol = m.savecol
+	m.currow = m.saverow
+}
+
 type cell struct {
 	char rune
 	bold bool
@@ -399,6 +427,8 @@ type matrix struct {
 	nowbold bool
 	currow  int
 	curcol  int
+	saverow int
+	savecol int
 }
 
 var ans2irc = []int{
