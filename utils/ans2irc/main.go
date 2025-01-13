@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/samber/lo"
 	"golang.org/x/text/encoding/ianaindex"
 )
 
@@ -25,106 +26,113 @@ func main() {
 		os.Exit(1)
 	}
 	file := flag.Args()[0]
+
 	data, err := os.ReadFile(file)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+
+	enc, err := ianaindex.IANA.Encoding("IBM437")
+	if enc == nil || err != nil {
+		fmt.Fprintln(os.Stderr, "error: IBM437 encoding not found!", err)
+		os.Exit(1)
+	}
+
+	data, err = enc.NewDecoder().Bytes(data)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+	text := []rune(string(data))
+
+	var isansi bool
+	var params string
+
+	var unknownformat []int
+	var unknownoperation []rune
+
 	m := &matrix{}
 	m.init()
-	enc, err := ianaindex.IANA.Encoding("IBM437")
-	if enc != nil && err == nil {
-		data, err = enc.NewDecoder().Bytes(data)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+	// parse loop
+loop:
+	for i := 0; i < len(text); i++ {
+		// ansi prefix
+		if i+1 < len(text) && text[i] == '\x1b' && text[i+1] == '[' {
+			i++
+			isansi = true
+			continue
 		}
-		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-		var isansi bool
-		text := []rune(string(data))
-		var params string
 
-		// parse loop
-	loop:
-		for i := 0; i < len(text); i++ {
-			// ansi prefix
-			if i+1 < len(text) && text[i] == '\x1b' && text[i+1] == '[' {
-				i++
-				isansi = true
-				continue
-			}
+		switch {
+		// formatting
+		case isansi && text[i] == 'm':
+			isansi = false
+			u := formatting(m, params)
+			unknownformat = append(unknownformat, u...)
+			params = ""
+			continue loop
 
-			switch {
-			// formatting
-			case isansi && text[i] == 'm':
-				isansi = false
-				formatting(m, params)
-				params = ""
-				continue loop
-
-			// char forward
-			case isansi && text[i] == 'C':
-				var moves int
-				_, err := fmt.Sscanf(params, "%d", &moves)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "ansi char move:", err)
-				} else {
-					m.cursormove(moves)
-				}
-				isansi = false
-				params = ""
-				continue loop
-			// move up
-			case isansi && text[i] == 'A':
-				var moves int
-				_, err := fmt.Sscanf(params, "%d", &moves)
-				if err != nil {
-					m.cursorup(1)
-				} else {
-					m.cursorup(moves)
-				}
-				isansi = false
-				params = ""
-				continue loop
-			// no op
-			case isansi && (text[i] >= 'a' && text[i] <= 'z' || text[i] >= 'A' && text[i] <= 'Z'):
-				fmt.Fprintln(os.Stderr, "unhandled ansi operation:", string(text[i]), " ")
-				isansi = false
-				params = ""
-				continue loop
-			}
-
-			// gather parameters
-			if isansi {
-				params += string(text[i])
-				continue
-			}
-
-			if text[i] < 4 || text[i] == '\x1A' {
-				m.addrune(' ')
+		// char forward
+		case isansi && text[i] == 'C':
+			var moves int
+			_, err := fmt.Sscanf(params, "%d", &moves)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ansi char move:", err)
 			} else {
-				m.addrune(text[i])
+				m.cursormove(moves)
 			}
+			isansi = false
+			params = ""
+			continue loop
+		// move up
+		case isansi && text[i] == 'A':
+			var moves int
+			_, err := fmt.Sscanf(params, "%d", &moves)
+			if err != nil {
+				m.cursorup(1)
+			} else {
+				m.cursorup(moves)
+			}
+			isansi = false
+			params = ""
+			continue loop
+		// no op
+		case isansi && (text[i] >= 'a' && text[i] <= 'z' || text[i] >= 'A' && text[i] <= 'Z'):
+			unknownoperation = append(unknownoperation, text[i])
+			isansi = false
+			params = ""
+			continue loop
 		}
-	} else {
-		fmt.Fprintln(os.Stderr, err)
+
+		// gather parameters
+		if isansi {
+			params += string(text[i])
+			continue
+		}
+
+		if text[i] < 4 || text[i] == '\x1A' {
+			m.addrune(' ')
+		} else {
+			m.addrune(text[i])
+		}
 	}
 
 	m.format2irc()
 
-	var ansicodes []int
-	for k := range unhandled {
-		ansicodes = append(ansicodes, k)
+	if len(unknownformat) > 0 {
+		sort.Ints(unknownformat)
+		fmt.Fprintln(os.Stderr, "unhandled ansi formatting:", lo.Uniq(unknownformat))
 	}
-	sort.Ints(ansicodes)
-	if len(ansicodes) > 0 {
-		fmt.Fprintln(os.Stderr, "unhandled ansi formatting:", ansicodes)
+	if len(unknownoperation) > 0 {
+		sort.Ints([]int(unknownformat))
+		fmt.Fprintf(os.Stderr, "unhandled ansi operation: %c\n", lo.Uniq(unknownoperation))
 	}
 }
 
-var unhandled = make(map[int]struct{})
-
-func formatting(m *matrix, codes string) {
+func formatting(m *matrix, codes string) (unknown []int) {
 	var nums []int
 	for _, str := range strings.Split(codes, ";") {
 		var i int
@@ -146,9 +154,10 @@ func formatting(m *matrix, codes string) {
 		case num >= 40 && num <= 47:
 			m.setbg(num - 40)
 		default:
-			unhandled[num] = struct{}{}
+			unknown = append(unknown, num)
 		}
 	}
+	return unknown
 }
 
 func (m *matrix) format2irc() {
