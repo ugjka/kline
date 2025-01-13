@@ -375,6 +375,8 @@ func (m *matrix) position(codes string) (err error) {
 	return err
 }
 
+// TODO: do not print extra empty line
+// something something
 func (m *matrix) addrune(r rune) {
 	if r == '\n' {
 		if len(m.rows)-1 == m.currow {
