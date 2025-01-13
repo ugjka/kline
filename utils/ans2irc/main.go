@@ -5,11 +5,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
-	"unicode"
 
 	"golang.org/x/text/encoding/ianaindex"
 )
@@ -22,10 +20,15 @@ func main() {
 	flag.Parse()
 
 	// pass filename as arg
+	if len(flag.Args()) == 0 {
+		fmt.Fprintln(os.Stderr, "error: no file name given")
+		os.Exit(1)
+	}
 	file := flag.Args()[0]
 	data, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	m := &matrix{}
 	m.init()
@@ -33,7 +36,8 @@ func main() {
 	if enc != nil && err == nil {
 		data, err = enc.NewDecoder().Bytes(data)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 		var isansi bool
@@ -83,7 +87,7 @@ func main() {
 				params = ""
 				continue loop
 			// no op
-			case isansi && unicode.IsLetter(text[i]):
+			case isansi && (text[i] >= 'a' && text[i] <= 'z' || text[i] >= 'A' && text[i] <= 'Z'):
 				fmt.Fprintln(os.Stderr, "unhandled ansi operation:", string(text[i]), " ")
 				isansi = false
 				params = ""
@@ -126,7 +130,7 @@ func formatting(m *matrix, codes string) {
 		var i int
 		_, err := fmt.Sscan(str, &i)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintln(os.Stderr, "formatting parser:", err)
 		}
 		nums = append(nums, i)
 	}
