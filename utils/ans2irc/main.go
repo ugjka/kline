@@ -224,11 +224,7 @@ func (m *matrix) init() {
 }
 
 func (m *matrix) newrow() {
-	var row []cell
-	for range *COLUMNS {
-		row = append(row, cell{})
-	}
-	m.rows = append(m.rows, row)
+	m.rows = append(m.rows, make([]cell, *COLUMNS))
 }
 
 func (m *matrix) cursormove(i int) {
