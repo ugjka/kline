@@ -177,8 +177,8 @@ func (m *matrix) format2irc() {
 					bold = cell.bold
 					fmt.Print("\x02")
 				}
-				if bold && fg != bold2irc[cell.fg] {
-					fg = bold2irc[cell.fg]
+				if bold && fg != ansbold2irc[cell.fg] {
+					fg = ansbold2irc[cell.fg]
 				} else if !bold && fg != ans2irc[cell.fg] {
 					fg = ans2irc[cell.fg]
 				}
@@ -202,8 +202,8 @@ func (m *matrix) format2irc() {
 
 			// it is hard to think about
 			switch {
-			case bold && fg != bold2irc[cell.fg]:
-				fg = bold2irc[cell.fg]
+			case bold && fg != ansbold2irc[cell.fg]:
+				fg = ansbold2irc[cell.fg]
 				fmt.Printf("\x03%02d", fg)
 			case !bold && fg != ans2irc[cell.fg]:
 				fg = ans2irc[cell.fg]
@@ -329,7 +329,7 @@ var ans2irc = []int{
 	96,
 }
 
-var bold2irc = []int{
+var ansbold2irc = []int{
 	94,
 	64,
 	56,
