@@ -58,13 +58,21 @@ func main() {
 	m.init()
 
 	//var irccontrol = []rune{'\x02', '\x1d', '\x1f', '\x1e', '\x11', '\x03', '\x04', '\x16', '\x0f'}
+
+	// we only use the beginning of this but whatever it can stay in its entirety
 	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
-	// parse loop
+
+	// the big parse loop
 loop:
 	for i := 0; i < len(text); i++ {
 		// ansi prefix
 		if i+1 < len(text) && text[i] == '\x1b' && text[i+1] == '[' {
 			i++
+			if isansi == true {
+				// strip incomplete sequences
+				defer fmt.Fprintf(os.Stderr, "stripped incomplete ansi params: %#x\n", params)
+				params = ""
+			}
 			isansi = true
 			continue
 		}
@@ -85,26 +93,22 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-		// formatting
-		case isansi && text[i] == 'm':
-			u := formatting(m, params)
-			unknownformat = append(unknownformat, u...)
-			isansi = false
-			params = ""
-			continue loop
-		// set cursor position
+			// set cursor position
 		case isansi && text[i] == 'H':
-			m.position(params)
+			err := m.position(params)
+			if err != nil {
+				defer fmt.Fprintln(os.Stderr, "ansi H:", err)
+			}
 			isansi = false
 			params = ""
 			continue loop
-		// cursor up
+			// cursor up
 		case isansi && text[i] == 'A':
 			var moves int
 			if params == "" {
 				m.up(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
-				fmt.Fprintln(os.Stderr, "ansi A:", err)
+				defer fmt.Fprintln(os.Stderr, "ansi A:", err)
 			} else {
 				m.up(moves)
 			}
@@ -117,20 +121,20 @@ loop:
 			if params == "" {
 				m.down(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
-				fmt.Fprintln(os.Stderr, "ansi B:", err)
+				defer fmt.Fprintln(os.Stderr, "ansi B:", err)
 			} else {
 				m.down(moves)
 			}
 			isansi = false
 			params = ""
 			continue loop
-		// cursor forward
+			// cursor forward
 		case isansi && text[i] == 'C':
 			var moves int
 			if params == "" {
 				m.forward(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
-				fmt.Fprintln(os.Stderr, "ansi C:", err)
+				defer fmt.Fprintln(os.Stderr, "ansi C:", err)
 			} else {
 				m.forward(moves)
 			}
@@ -143,10 +147,22 @@ loop:
 			if params == "" {
 				m.backward(1)
 			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
-				fmt.Fprintln(os.Stderr, "ansi D:", err)
+				defer fmt.Fprintln(os.Stderr, "ansi D:", err)
 			} else {
 				m.backward(moves)
 			}
+			isansi = false
+			params = ""
+			continue loop
+		// formatting
+		case isansi && text[i] == 'm':
+			u, errs := formatting(m, params)
+			defer func() {
+				for _, err := range errs {
+					fmt.Fprintln(os.Stderr, "formatting:", err)
+				}
+			}()
+			unknownformat = append(unknownformat, u...)
 			isansi = false
 			params = ""
 			continue loop
@@ -186,13 +202,13 @@ loop:
 	}
 }
 
-func formatting(m *matrix, codes string) (unknown []int) {
+func formatting(m *matrix, codes string) (unknown []int, errs []error) {
 	var nums []int
 	for _, str := range strings.Split(codes, ";") {
 		var i int
 		_, err := fmt.Sscan(str, &i)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "formatting parser:", err)
+			errs = append(errs, err)
 		}
 		nums = append(nums, i)
 	}
@@ -211,7 +227,7 @@ func formatting(m *matrix, codes string) (unknown []int) {
 			unknown = append(unknown, num)
 		}
 	}
-	return unknown
+	return unknown, errs
 }
 
 func (m *matrix) format2irc() {
@@ -323,7 +339,7 @@ func (m *matrix) down(i int) {
 	}
 }
 
-func (m *matrix) position(codes string) {
+func (m *matrix) position(codes string) (err error) {
 	if strings.HasPrefix(codes, ";") {
 		codes = "1" + codes
 	}
@@ -335,10 +351,7 @@ func (m *matrix) position(codes string) {
 	}
 	var row int
 	var col int
-	_, err := fmt.Sscanf(codes, "%d;%d", &row, &col)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "position H:", err, codes)
-	}
+	_, err = fmt.Sscanf(codes, "%d;%d", &row, &col)
 	row -= 1
 	col -= 1
 	if row < 0 {
@@ -358,6 +371,7 @@ func (m *matrix) position(codes string) {
 	}
 	m.currow = row
 	m.curcol = col
+	return err
 }
 
 func (m *matrix) addrune(r rune) {
