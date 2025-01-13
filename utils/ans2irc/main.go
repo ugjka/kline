@@ -420,13 +420,13 @@ func (m *matrix) reset() {
 }
 
 func (m *matrix) save() {
-	m.savecol = m.curcol
-	m.saverow = m.currow
+	m.tmpcol = m.curcol
+	m.tmprow = m.currow
 }
 
 func (m *matrix) restore() {
-	m.curcol = m.savecol
-	m.currow = m.saverow
+	m.curcol = m.tmpcol
+	m.currow = m.tmprow
 }
 
 type cell struct {
@@ -444,8 +444,8 @@ type matrix struct {
 	nowbold bool
 	currow  int
 	curcol  int
-	saverow int
-	savecol int
+	tmprow  int
+	tmpcol  int
 }
 
 var ans2irc = []int{
