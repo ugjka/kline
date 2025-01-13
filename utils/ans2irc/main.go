@@ -69,6 +69,9 @@ loop:
 			continue
 		}
 
+		// finding test cases example:
+		// find . -type f -exec grep -Iq $'\x1B\[D' {} \; -print
+
 		switch {
 		// save cursor position
 		case isansi && text[i] == 's':
