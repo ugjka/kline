@@ -56,6 +56,7 @@ func main() {
 
 	m := &matrix{}
 	m.init()
+
 	// parse loop
 loop:
 	for i := 0; i < len(text); i++ {
