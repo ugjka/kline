@@ -70,18 +70,19 @@ loop:
 		switch {
 		// formatting
 		case isansi && text[i] == 'm':
-			isansi = false
 			u := formatting(m, params)
 			unknownformat = append(unknownformat, u...)
+			isansi = false
 			params = ""
 			continue loop
 
 		// char forward
 		case isansi && text[i] == 'C':
 			var moves int
-			_, err := fmt.Sscanf(params, "%d", &moves)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "ansi char move:", err)
+			if params == "" {
+				m.cursormove(1)
+			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
+				fmt.Fprintln(os.Stderr, "ansi C:", err)
 			} else {
 				m.cursormove(moves)
 			}
@@ -91,9 +92,10 @@ loop:
 		// move up
 		case isansi && text[i] == 'A':
 			var moves int
-			_, err := fmt.Sscanf(params, "%d", &moves)
-			if err != nil {
+			if params == "" {
 				m.cursorup(1)
+			} else if _, err := fmt.Sscanf(params, "%d", &moves); err != nil {
+				fmt.Fprintln(os.Stderr, "ansi A:", err)
 			} else {
 				m.cursorup(moves)
 			}
