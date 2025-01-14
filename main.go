@@ -353,7 +353,7 @@ func main() {
 				continue
 			}
 			if time.Duration(number)*time.Millisecond > time.Second {
-				fmt.Fprintln(os.Stderr, "error: delay can't be bigger than 1000ms")
+				fmt.Fprintln(os.Stderr, "error: delay can't be more than 1000ms")
 				continue
 			}
 			delay.Store(int64(time.Millisecond) * int64(number))
