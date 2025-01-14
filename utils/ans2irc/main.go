@@ -204,7 +204,7 @@ loop:
 		}
 
 		// replace control chars with chars from ibm437 set
-		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
+		if text[i] < 32 && text[i] != '\n' {
 			m.addrune(cp437[text[i]])
 		} else {
 			m.addrune(text[i])
