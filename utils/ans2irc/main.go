@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// split off 16colo.rs metadata
-	// and stuff
+	// and other cruft
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	data = bytes.Split(data, []byte{'\x1A'})[0]
 	data = bytes.TrimRight(data, "\n")
@@ -63,9 +63,10 @@ func main() {
 	m := &matrix{}
 	m.init()
 
+	// all irc contol chars for later use
 	//var irccontrol = []rune{'\x02', '\x1d', '\x1f', '\x1e', '\x11', '\x03', '\x04', '\x16', '\x0f'}
 
-	// we only use the beginning of this but whatever it can stay in its entirety
+	// we only use the beginning of this but whatever it can stay in its entirety here
 	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
 
 	// the big parse loop
@@ -180,14 +181,14 @@ loop:
 			u, errs := formatting(m, params)
 			defer func() {
 				for _, err := range errs {
-					fmt.Fprintln(os.Stderr, "formatting:", err)
+					fmt.Fprintln(os.Stderr, "ansi m:", err)
 				}
 			}()
 			unknownformat = append(unknownformat, u...)
 			isansi = false
 			params = ""
 			continue loop
-		// no op
+		// no op, log unknown ansi commands
 		case isansi && (text[i] >= 'a' && text[i] <= 'z' || text[i] >= 'A' && text[i] <= 'Z'):
 			unknownoperation = append(unknownoperation, text[i])
 			isansi = false
@@ -201,7 +202,7 @@ loop:
 			continue loop
 		}
 
-		// replace some escape codes with ibm437 set
+		// replace some control chars with ibm437 set ones
 		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
 			m.addrune(cp437[text[i]])
 		} else {
@@ -213,7 +214,7 @@ loop:
 
 	if len(unknownformat) > 0 {
 		sort.Ints(unknownformat)
-		fmt.Fprintln(os.Stderr, "unhandled ansi formatting:", lo.Uniq(unknownformat))
+		fmt.Fprintln(os.Stderr, "unhandled ansi m parameters:", lo.Uniq(unknownformat))
 	}
 	if len(unknownoperation) > 0 {
 		sort.Ints([]int(unknownformat))
@@ -257,7 +258,7 @@ func (m *matrix) format2irc() {
 	for _, row := range m.rows {
 		for i, cell := range row {
 			// init first char because irc doesn't
-			// carry over formating to next line
+			// carry over formating to the next line
 			if i == 0 {
 				if !cell.set {
 					cell.char = ' '
