@@ -46,9 +46,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+
+	// spit off 16colo.rs metadata
+	data = bytes.Split(data, []byte{'\x1A', '\x1A'})[0]
+
 	data = bytes.TrimRight(data, "\n")
 
-	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	text := []rune(string(data))
 
 	var isansi bool
@@ -181,10 +185,6 @@ loop:
 		if isansi {
 			params += string(text[i])
 			continue loop
-		}
-
-		if text[i] == '\x1A' {
-			break loop
 		}
 		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
 			m.addrune(cp437[text[i]])
