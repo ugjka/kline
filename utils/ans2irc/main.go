@@ -46,11 +46,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// split off 16colo.rs metadata
+	// and stuff
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-
-	// spit off 16colo.rs metadata
-	data = bytes.Split(data, []byte{'\x1A', '\x1A'})[0]
-
+	data = bytes.Split(data, []byte{'\x1A'})[0]
 	data = bytes.TrimRight(data, "\n")
 
 	text := []rune(string(data))
@@ -86,6 +85,8 @@ loop:
 
 		// finding test cases example:
 		// find . -type f -exec grep -Iq $'\x1B\[D' {} \; -print
+		// from
+		// https://github.com/sixteencolors/sixteencolors-archive
 
 		switch {
 		// save cursor position
