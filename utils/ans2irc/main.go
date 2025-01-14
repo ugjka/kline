@@ -240,8 +240,10 @@ func formatting(m *matrix, codes string) (unknown []int, errs []error) {
 			m.reset()
 		case num == 1:
 			m.setbold()
+		// foreground color
 		case num >= 30 && num <= 37:
 			m.setfg(num - 30)
+		// background color
 		case num >= 40 && num <= 47:
 			m.setbg(num - 40)
 		default:
