@@ -100,7 +100,7 @@ func main() {
 		"osmium.libera.chat",    // Umea, SE
 		"zinc.libera.chat",      // Espoo, FI
 		"mercury.libera.chat",   // London, UK
-		//"lithium.libera.chat",   // Your, Shrink
+		//"lithium.libera.chat", // Your, Shrink
 	}
 
 	if (!PARTYCHANOPEN || PARTYCHAN == "") && TESTCHAN == "" {
