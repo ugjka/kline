@@ -93,13 +93,14 @@ func main() {
 	servers := []string{
 		"zirconium.libera.chat", // Milano, IT
 		"lead.libera.chat",      // Budapest, HU
-		"tungsten.libera.chat",  // Stockholm, SE
+		"tungsten.libera.chat",  // Umea, SE
 		"platinum.libera.chat",  // Stockholm, SE
 		"iridium.libera.chat",   // Stockholm, SE
+		"erbium.libera.chat",    // Frankfurt, DE
 		"osmium.libera.chat",    // Umea, SE
 		"zinc.libera.chat",      // Espoo, FI
 		"mercury.libera.chat",   // London, UK
-		"lithium.libera.chat",   // Your, Shrink
+		//"lithium.libera.chat",   // Your, Shrink
 	}
 
 	if (!PARTYCHANOPEN || PARTYCHAN == "") && TESTCHAN == "" {
