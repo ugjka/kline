@@ -46,9 +46,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// split off 16colo.rs metadata
-	// and other cruft
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+	// split off 16colo.rs metadata
 	data = bytes.Split(data, []byte{'\x1A'})[0]
 	data = bytes.TrimRight(data, "\n")
 
@@ -85,7 +84,7 @@ loop:
 		}
 
 		// finding test cases example:
-		// find . -type f -exec grep -IqP "\x1b\[\d{2}B" {} \; -print
+		// find . -type f -exec grep -IqP $"\x1b\[10B" {} \; -print
 		// from
 		// https://github.com/sixteencolors/sixteencolors-archive
 
@@ -202,7 +201,7 @@ loop:
 			continue loop
 		}
 
-		// replace some control chars with ibm437 set ones
+		// replace control chars with chars from ibm437 set
 		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
 			m.addrune(cp437[text[i]])
 		} else {
@@ -290,7 +289,7 @@ func (m *matrix) format2irc() {
 				bold = cell.bold
 			}
 
-			// it is hard to think about
+			// it is hard to think about this
 			switch {
 			case bold && fg != ansbold2irc[cell.fg]:
 				fg = ansbold2irc[cell.fg]
@@ -414,8 +413,6 @@ func (m *matrix) position(codes string) (err error) {
 	return err
 }
 
-// TODO: do not print extra empty line
-// something something
 func (m *matrix) addrune(r rune) {
 	if r == '\n' {
 		if len(m.rows)-1 == m.currow {
@@ -490,6 +487,7 @@ type matrix struct {
 	tmpcol  int
 }
 
+// color maps
 var ans2irc = []int{
 	88,
 	40,
