@@ -363,7 +363,7 @@ func main() {
 		case "a":
 			printdb.clear("")
 
-		// check lag time
+		// kline command "l" checks irc server lag time
 		case "l":
 			for i := range pingpong {
 				pingpong[i] = make(chan time.Time, 1)
