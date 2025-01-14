@@ -217,7 +217,7 @@ loop:
 	}
 	if len(unknownoperation) > 0 {
 		sort.Ints([]int(unknownformat))
-		fmt.Fprintf(os.Stderr, "unhandled ansi operation: %c\n", lo.Uniq(unknownoperation))
+		fmt.Fprintf(os.Stderr, "unhandled ansi commands: %c\n", lo.Uniq(unknownoperation))
 	}
 }
 
