@@ -1,4 +1,6 @@
-// Convert ANSI art to irc colors
+// convert ANSI art to irc format
+// tested on *.ANS files from https://16colo.rs/
+// modern terminal art is out of scope here
 package main
 
 import (
