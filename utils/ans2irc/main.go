@@ -101,7 +101,7 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-			// set cursor position
+		// set cursor position
 		case isansi && text[i] == 'H':
 			err := m.position(params)
 			if err != nil {
@@ -110,7 +110,7 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-			// cursor up
+		// cursor up
 		case isansi && text[i] == 'A':
 			var moves int
 			if params == "" {
@@ -123,7 +123,7 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-			// cursor down
+		// cursor down
 		case isansi && text[i] == 'B':
 			var moves int
 			if params == "" {
@@ -136,7 +136,7 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-			// cursor forward
+		// cursor forward
 		case isansi && text[i] == 'C':
 			var moves int
 			if params == "" {
@@ -149,7 +149,7 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
-			// cursor forward
+		// cursor backward
 		case isansi && text[i] == 'D':
 			var moves int
 			if params == "" {
@@ -187,6 +187,8 @@ loop:
 			params += string(text[i])
 			continue loop
 		}
+
+		// replace some escape codes with ibm437 set
 		if text[i] < 32 && text[i] != '\x1b' && text[i] != '\n' {
 			m.addrune(cp437[text[i]])
 		} else {
