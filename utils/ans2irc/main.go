@@ -110,6 +110,19 @@ loop:
 			isansi = false
 			params = ""
 			continue loop
+		//erase in line
+		case isansi && text[i] == 'K':
+			var opt int
+			if params == "" {
+				m.eraseinline(0)
+			} else if _, err := fmt.Sscanf(params, "%d", &opt); err != nil {
+				defer fmt.Fprintln(os.Stderr, "ansi K:", err)
+			} else {
+				m.eraseinline(opt)
+			}
+			isansi = false
+			params = ""
+			continue loop
 		// cursor up
 		case isansi && text[i] == 'A':
 			var moves int
@@ -310,6 +323,26 @@ func (m *matrix) init() {
 	m.newrow()
 	m.nowfg = 7
 	m.nowbg = 0
+}
+
+func (m *matrix) eraseinline(i int) error {
+	switch i {
+	case 0:
+		for j := range *COLUMNS - m.curcol + 1 {
+			m.rows[m.currow][m.curcol+j].char = ' '
+		}
+	case 1:
+		for j := range m.curcol + 1 {
+			m.rows[m.currow][j].char = ' '
+		}
+	case 2:
+		for j := range *COLUMNS + 1 {
+			m.rows[m.currow][j].char = ' '
+		}
+	default:
+		return fmt.Errorf("unknown paramater: %d", i)
+	}
+	return nil
 }
 
 func (m *matrix) newrow() {
