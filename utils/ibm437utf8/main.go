@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"os"
 
@@ -22,5 +23,15 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	os.Stdout.Write(data)
+	buf := bytes.NewBuffer(nil)
+	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
+	for _, r := range []rune(string(data)) {
+		// replace control chars with chars from ibm437 set
+		if r < 32 && r != '\x1b' && r != '\n' {
+			buf.WriteRune(cp437[r])
+		} else {
+			buf.WriteRune(r)
+		}
+	}
+	buf.WriteTo(os.Stdout)
 }
