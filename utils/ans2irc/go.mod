@@ -1,4 +1,4 @@
-module ans2irc
+module github.com/ugjka/kline/utils/ans2irc
 
 go 1.23.4
 
