@@ -32,6 +32,7 @@ import (
 // kline command "t art/asciiexample.txt" posts spam to testchan
 // kline command "d milliseconds" sets  delay between messages
 // kline command "a" aborts any current spamming
+// kline command "l" lagtests the irc servers
 //
 // kline configuration below via constants
 
@@ -40,8 +41,8 @@ import (
 // ipv6 for the win, also kline
 //
 // Examples:
-// const BINDHOST = "2a01:4f8:c010:97e4::beec"
-// const BINDHOST = "2a03:eb00:b9a3:11d3:2b83:9910:222f:1603"
+// const BINDHOST = "2a01:4f7:c010:97e4::beec"
+// const BINDHOST = "2a03:eb00:b9b3:11d3:2b83:9910:222f:1603"
 const BINDHOST = ""
 
 // set this to true when #libera-newyears is open for kliners
@@ -160,6 +161,10 @@ func main() {
 	testchanVoiced.Store(!TESTCHANGUARD)
 	var bots []*kitty.Bot
 	var once sync.Once
+	var pingpong = make([]chan time.Time, len(servers))
+	if DOUBLEKLINE {
+		pingpong = make([]chan time.Time, len(servers)/2)
+	}
 	for i := range len(servers) {
 		opts := func(bot *kitty.Bot) {
 			bot.Channels = []string{}
@@ -212,6 +217,20 @@ func main() {
 					printdb.clear(PARTYCHAN)
 				},
 			})
+		})
+
+		bot.AddTrigger(kitty.Trigger{
+			Condition: func(b *kitty.Bot, m *kitty.Message) bool {
+				return m.Command == "PONG"
+			},
+			Action: func(b *kitty.Bot, m *kitty.Message) {
+				if i > len(pingpong) {
+					return
+				}
+				if t, ok := <-pingpong[i]; ok {
+					log.Info("lag test", servers[i], time.Since(t))
+				}
+			},
 		})
 
 		bots = append(bots, bot)
@@ -343,6 +362,14 @@ func main() {
 		// kline command "a" aborts current spamming
 		case "a":
 			printdb.clear("")
+
+		// check lag time
+		case "l":
+			for i := range pingpong {
+				pingpong[i] = make(chan time.Time, 1)
+				pingpong[i] <- time.Now()
+				bots[i].Send(fmt.Sprintf("PING :%s", servers[i]))
+			}
 		default:
 			fmt.Println("error: invalid command")
 		}

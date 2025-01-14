@@ -9,6 +9,12 @@
 //  ██╔═██╗ ██║     ██║██║╚██╗██║██╔══╝      ██╔═══╝ ████╔╝██║██╔═══╝ ██╔═══██╗
 //  ██║  ██╗███████╗██║██║ ╚████║███████╗    ███████╗╚██████╔╝███████╗╚██████╔╝
 //  ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝    ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ 
+// ██╗  ██╗██╗     ██╗███╗   ██╗███████╗    ██████╗  ██████╗ ██████╗  ██████╗
+// ██║ ██╔╝██║     ██║████╗  ██║██╔════╝    ╚════██╗██╔═████╗╚════██╗██╔════╝
+// █████╔╝ ██║     ██║██╔██╗ ██║█████╗       █████╔╝██║██╔██║ █████╔╝███████╗
+// ██╔═██╗ ██║     ██║██║╚██╗██║██╔══╝      ██╔═══╝ ████╔╝██║██╔═══╝ ██╔═══██╗
+// ██║  ██╗███████╗██║██║ ╚████║███████╗    ███████╗╚██████╔╝███████╗╚██████╔╝
+// ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝    ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝
 package main
 
 import (
@@ -20,9 +26,13 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
+	"github.com/gogs/chardet"
 	kitty "github.com/ugjka/kittybot"
+	"golang.org/x/text/encoding/ianaindex"
 	log "gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -33,6 +43,7 @@ import (
 // kline command "t art/asciiexample.txt" posts spam to testchan
 // kline command "d milliseconds" sets  delay between messages
 // kline command "a" aborts any current spamming
+// kline command "l" lagtests the irc servers
 //
 // kline configuration below via constants
 
@@ -41,8 +52,8 @@ import (
 // ipv6 for the win, also kline
 //
 // Examples:
-// const BINDHOST = "2a01:4f8:c010:97e4::beec"
-// const BINDHOST = "2a03:eb00:b9a3:11d3:2b83:9910:222f:1603"
+// const BINDHOST = "2a01:4f7:c010:97e4::beec"
+// const BINDHOST = "2a03:eb00:b9b3:11d3:2b83:9910:222f:1603"
 const BINDHOST = ""
 
 // set this to true when #libera-newyears is open for kliners
