@@ -84,7 +84,7 @@ loop:
 		}
 
 		// finding test cases example:
-		// find . -type f -exec grep -Iq $'\x1B\[D' {} \; -print
+		// find . -type f -exec grep -IqP "\x1b\[\d{2}B" {} \; -print
 		// from
 		// https://github.com/sixteencolors/sixteencolors-archive
 
