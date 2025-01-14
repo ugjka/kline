@@ -24,6 +24,7 @@ func main() {
 		}
 	}
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte{'\n'})
+	data = bytes.Split(data, []byte{'\x1A'})[0]
 	buf := bytes.NewBuffer(nil)
 	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼")
 	for _, r := range []rune(string(data)) {
