@@ -17,7 +17,7 @@ var COLUMNS *int
 
 func main() {
 	COLUMNS = flag.Int("cols", 80, "column count in ansi artwork")
-	*COLUMNS -= 1
+	*COLUMNS--
 
 	flag.Parse()
 
