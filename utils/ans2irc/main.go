@@ -46,6 +46,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	data = bytes.TrimRight(data, "\n")
+
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	text := []rune(string(data))
 
