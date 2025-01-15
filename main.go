@@ -228,8 +228,12 @@ func main() {
 				if i > len(pingpong) {
 					return
 				}
-				if t, ok := <-pingpong[i]; ok {
-					log.Info("lag test", servers[i], time.Since(t))
+				select {
+				case t, ok := <-pingpong[i]:
+					if ok {
+						log.Info("lag test", servers[i], time.Since(t))
+					}
+				default:
 				}
 			},
 		})
