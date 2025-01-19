@@ -76,9 +76,10 @@ const DEFAULTDELAY = 100
 
 // for shorter kline irc prefixes
 // run fake ident server
-// port 113 needs to be open
+// port 113 needs to be open and
 // kline needs to be run as root
-// or do some CAP/perm mumbo jumbo
+// or set bind cap on the binary as below:
+// "sudo setcap 'cap_net_bind_service=ep' kline"
 // turns off when all nicks served
 const FAKEIDENTSERVER = false
 
