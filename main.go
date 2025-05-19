@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -192,10 +193,10 @@ func main() {
 		if TESTCHANGUARD {
 			bot.AddTrigger(kitty.Trigger{
 				Condition: func(b *kitty.Bot, m *kitty.Message) bool {
-					return m.Command == "MODE" && m.Param(0) == TESTCHAN && m.Param(1) == "+v" && m.Param(2) == nick
+					return m.Command == "MODE" && m.Param(0) == TESTCHAN && strings.HasPrefix(m.Param(1), "+v") && slices.Contains(m.Params[2:], nick)
 				},
 				Action: func(b *kitty.Bot, m *kitty.Message) {
-					log.Info("kline", m.Param(2), "voiced in the test chan!", "remaining", len(servers)-int(countVoicing.Add(1)))
+					log.Info("kline", nick, "voiced in the test chan!", "remaining", len(servers)-int(countVoicing.Add(1)))
 					if int(countVoicing.Load()) == len(servers) {
 						log.Info("kline", "success", "all bots in the test channel voiced! You can proceed!")
 						testchanVoiced.Store(true)
