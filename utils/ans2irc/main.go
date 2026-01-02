@@ -239,11 +239,11 @@ func formatting(m *matrix, codes string) (unknown []int, errs []error) {
 		case num == 0:
 			m.reset()
 		case num == 1:
-			m.setbold()
-		// foreground color
+			m.sethigh()
+		// high color
 		case num >= 30 && num <= 37:
 			m.setfg(num - 30)
-		// background color
+		// low color
 		case num >= 40 && num <= 47:
 			m.setbg(num - 40)
 		default:
@@ -254,10 +254,8 @@ func formatting(m *matrix, codes string) (unknown []int, errs []error) {
 }
 
 func (m *matrix) format2irc() {
-	var bold bool = false
-	var fg int = ans2irc[7]
-	var bg int = ans2irc[0]
-	var oldbg int = ans2irc[0]
+	var fg int = ansilow[7]
+	var bg int = ansilow[0]
 	for _, row := range m.rows {
 		for i, cell := range row {
 			// init first char because irc doesn't
@@ -266,21 +264,19 @@ func (m *matrix) format2irc() {
 				if !cell.set {
 					cell.char = ' '
 				}
-				if bold != cell.bold {
-					bold = cell.bold
-					fmt.Print("\x02")
+
+				// Update local state
+				if cell.high {
+					fg = ansihigh[cell.fg]
+				} else {
+					fg = ansilow[cell.fg]
 				}
-				if bold && fg != ansbold2irc[cell.fg] {
-					fg = ansbold2irc[cell.fg]
-				} else if !bold && fg != ans2irc[cell.fg] {
-					fg = ans2irc[cell.fg]
-				}
-				if bg != ans2irc[cell.bg] {
-					bg = ans2irc[cell.bg]
-					oldbg = bg
-				}
-				fmt.Printf("\x03%02d,%02d%c", fg, bg, cell.char)
-				_ = oldbg
+				bg = ansilow[cell.bg]
+
+				// Print as a single atomic unit
+				fmt.Printf("\x03%02d,%02d", fg, bg)
+				fmt.Printf("%c", cell.char)
+
 				continue
 			}
 
@@ -288,34 +284,25 @@ func (m *matrix) format2irc() {
 				cell.char = ' '
 			}
 
-			if bold != cell.bold {
-				fmt.Print("\x02")
-				bold = cell.bold
-			}
+			// 1. Determine if anything changed
+			fgChanged := (cell.high && fg != ansihigh[cell.fg]) || (!cell.high && fg != ansilow[cell.fg])
+			bgChanged := bg != ansilow[cell.bg]
 
-			// it is hard to think about this
-			switch {
-			case bold && fg != ansbold2irc[cell.fg]:
-				fg = ansbold2irc[cell.fg]
-				fmt.Printf("\x03%02d", fg)
-			case !bold && fg != ans2irc[cell.fg]:
-				fg = ans2irc[cell.fg]
-				fmt.Printf("\x03%02d", fg)
-			case bg != ans2irc[cell.bg] && !(fg == ans2irc[cell.bg] && cell.char == ' '):
-				fmt.Printf("\x03%02d", fg)
-			}
-
-			switch {
-			case fg == ans2irc[cell.bg] && cell.char == ' ':
-				cell.char = '█'
-			case bg != ans2irc[cell.bg]:
-				bg = ans2irc[cell.bg]
-				if bg != oldbg {
-					fmt.Printf(",%02d", bg)
+			if fgChanged || bgChanged {
+				// Update local state
+				if cell.high {
+					fg = ansihigh[cell.fg]
+				} else {
+					fg = ansilow[cell.fg]
 				}
-				oldbg = bg
-			}
+				bg = ansilow[cell.bg]
 
+				// Print as a single atomic unit
+				_, err := fmt.Printf("\x03%02d,%02d", fg, bg)
+				if err != nil {
+					panic(err)
+				}
+			}
 			fmt.Printf("%c", cell.char)
 		}
 		fmt.Println()
@@ -428,7 +415,7 @@ func (m *matrix) addrune(r rune) {
 	}
 	c := cell{
 		char: r,
-		bold: m.nowbold,
+		high: m.nowhigh,
 		fg:   m.nowfg,
 		bg:   m.nowbg,
 		set:  true,
@@ -444,8 +431,8 @@ func (m *matrix) addrune(r rune) {
 	}
 }
 
-func (m *matrix) setbold() {
-	m.nowbold = true
+func (m *matrix) sethigh() {
+	m.nowhigh = true
 }
 
 func (m *matrix) setbg(i int) {
@@ -457,7 +444,7 @@ func (m *matrix) setfg(i int) {
 }
 
 func (m *matrix) reset() {
-	m.nowbold = false
+	m.nowhigh = false
 	m.nowfg = 7
 	m.nowbg = 0
 }
@@ -474,7 +461,7 @@ func (m *matrix) restore() {
 
 type cell struct {
 	char rune
-	bold bool
+	high bool
 	bg   int
 	fg   int
 	set  bool
@@ -484,7 +471,7 @@ type matrix struct {
 	rows    [][]cell
 	nowbg   int
 	nowfg   int
-	nowbold bool
+	nowhigh bool
 	currow  int
 	curcol  int
 	tmprow  int
@@ -492,24 +479,28 @@ type matrix struct {
 }
 
 // color maps
-var ans2irc = []int{
-	88,
-	40,
-	44,
-	41,
-	48,
-	50,
-	46,
-	96,
-}
+// var ans2irc = []int{
+// 	88,
+// 	40,
+// 	44,
+// 	41,
+// 	48,
+// 	50,
+// 	46,
+// 	96,
+// }
 
-var ansbold2irc = []int{
-	94,
-	64,
-	56,
-	54,
-	72,
-	74,
-	70,
-	00,
-}
+// var ansbold2irc = []int{
+// 	94,
+// 	64,
+// 	56,
+// 	54,
+// 	72,
+// 	74,
+// 	70,
+// 	00,
+// }
+
+var ansilow = []int{1, 5, 3, 7, 2, 13, 10, 15}
+
+var ansihigh = []int{14, 4, 9, 8, 12, 6, 11, 0}
