@@ -420,7 +420,7 @@ func (m *matrix) addrune(r rune) {
 	}
 	c := cell{
 		char: r,
-		bold: m.nowhi,
+		bold: m.nowbold,
 		fg:   m.nowfg,
 		bg:   m.nowbg,
 		set:  true,
@@ -437,7 +437,7 @@ func (m *matrix) addrune(r rune) {
 }
 
 func (m *matrix) setbold() {
-	m.nowhi = true
+	m.nowbold = true
 }
 
 func (m *matrix) setbg(i int) {
@@ -449,7 +449,7 @@ func (m *matrix) setfg(i int) {
 }
 
 func (m *matrix) reset() {
-	m.nowhi = false
+	m.nowbold = false
 	m.nowfg = 7
 	m.nowbg = 0
 }
@@ -473,14 +473,14 @@ type cell struct {
 }
 
 type matrix struct {
-	rows   [][]cell
-	nowbg  int
-	nowfg  int
-	nowhi  bool
-	currow int
-	curcol int
-	tmprow int
-	tmpcol int
+	rows    [][]cell
+	nowbg   int
+	nowfg   int
+	nowbold bool
+	currow  int
+	curcol  int
+	tmprow  int
+	tmpcol  int
 }
 
 var ansinorm = []int{1, 5, 3, 7, 2, 13, 10, 15}
