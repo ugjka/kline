@@ -64,9 +64,6 @@ func main() {
 	m := &matrix{}
 	m.init()
 
-	// all irc contol chars for later use
-	//var irccontrol = []rune{'\x02', '\x1d', '\x1f', '\x1e', '\x11', '\x03', '\x04', '\x16', '\x0f'}
-
 	// we only use the beginning of this but whatever it can stay in its entirety here
 	var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
 
@@ -263,7 +260,6 @@ func (m *matrix) format2irc() {
 					cell.char = ' '
 				}
 
-				// Update local state
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
@@ -271,7 +267,6 @@ func (m *matrix) format2irc() {
 				}
 				bg = ansinorm[cell.bg]
 
-				// Print as a single atomic unit
 				fmt.Printf("\x03%02d,%02d", fg, bg)
 				fmt.Printf("%c", cell.char)
 
