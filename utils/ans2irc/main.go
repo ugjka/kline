@@ -282,13 +282,12 @@ func (m *matrix) format2irc() {
 				cell.char = ' '
 			}
 
-			// 1. Determine if anything changed
 			fgChanged := (cell.bold && fg != ansibold[cell.fg]) || (!cell.bold && fg != ansi[cell.fg])
 			bgChanged := bg != ansi[cell.bg]
 
 			switch {
 			case bgChanged:
-				// Update local state
+
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
@@ -296,10 +295,9 @@ func (m *matrix) format2irc() {
 				}
 				bg = ansi[cell.bg]
 
-				// Print as a single atomic unit
 				fmt.Printf("\x03%02d,%02d", fg, bg)
 			case fgChanged:
-				// Update local state
+
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
@@ -307,8 +305,12 @@ func (m *matrix) format2irc() {
 				}
 				bg = ansi[cell.bg]
 
-				// Print as a single atomic unit
-				fmt.Printf("\x03%02d", fg)
+				if fg == bg {
+					// weechat bug
+					fmt.Printf("\x03%02d,%02d", fg, bg)
+				} else {
+					fmt.Printf("\x03%02d", fg)
+				}
 			}
 
 			fmt.Printf("%c", cell.char)
