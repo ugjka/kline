@@ -252,8 +252,8 @@ func formatting(m *matrix, codes string) (unknown []int, errs []error) {
 }
 
 func (m *matrix) format2irc() {
-	var fg int = ansi[7]
-	var bg int = ansi[0]
+	var fg int = ansinorm[7]
+	var bg int = ansinorm[0]
 	for _, row := range m.rows {
 		for i, cell := range row {
 			// init first char because irc doesn't
@@ -267,9 +267,9 @@ func (m *matrix) format2irc() {
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
-					fg = ansi[cell.fg]
+					fg = ansinorm[cell.fg]
 				}
-				bg = ansi[cell.bg]
+				bg = ansinorm[cell.bg]
 
 				// Print as a single atomic unit
 				fmt.Printf("\x03%02d,%02d", fg, bg)
@@ -282,39 +282,23 @@ func (m *matrix) format2irc() {
 				cell.char = ' '
 			}
 
-			fgChanged := (cell.bold && fg != ansibold[cell.fg]) || (!cell.bold && fg != ansi[cell.fg])
-			bgChanged := bg != ansi[cell.bg]
+			bgChanged := bg != ansinorm[cell.bg]
+			fgChanged := (cell.bold && fg != ansibold[cell.fg]) || (!cell.bold && fg != ansinorm[cell.fg])
 
-			switch {
-			case bgChanged:
-
+			if bgChanged || fgChanged {
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
-					fg = ansi[cell.fg]
+					fg = ansinorm[cell.fg]
 				}
-				bg = ansi[cell.bg]
+				bg = ansinorm[cell.bg]
 
 				fmt.Printf("\x03%02d,%02d", fg, bg)
-			case fgChanged:
-
-				if cell.bold {
-					fg = ansibold[cell.fg]
-				} else {
-					fg = ansi[cell.fg]
-				}
-				bg = ansi[cell.bg]
-
-				if fg == bg {
-					// weechat bug
-					fmt.Printf("\x03%02d,%02d", fg, bg)
-				} else {
-					fmt.Printf("\x03%02d", fg)
-				}
 			}
 
 			fmt.Printf("%c", cell.char)
 		}
+
 		fmt.Println()
 	}
 }
@@ -488,6 +472,6 @@ type matrix struct {
 	tmpcol int
 }
 
-var ansi = []int{1, 5, 3, 7, 2, 13, 10, 15}
+var ansinorm = []int{1, 5, 3, 7, 2, 6, 10, 15}
 
-var ansibold = []int{14, 4, 9, 8, 12, 6, 11, 0}
+var ansibold = []int{14, 4, 9, 8, 12, 13, 11, 0}
