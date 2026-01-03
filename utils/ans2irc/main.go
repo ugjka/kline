@@ -282,10 +282,12 @@ func (m *matrix) format2irc() {
 				cell.char = ' '
 			}
 
-			bgChanged := bg != ansinorm[cell.bg]
 			fgChanged := (cell.bold && fg != ansibold[cell.fg]) || (!cell.bold && fg != ansinorm[cell.fg])
+			bgChanged := bg != ansinorm[cell.bg]
 
-			if bgChanged || fgChanged {
+			switch {
+			case bgChanged:
+
 				if cell.bold {
 					fg = ansibold[cell.fg]
 				} else {
@@ -294,11 +296,25 @@ func (m *matrix) format2irc() {
 				bg = ansinorm[cell.bg]
 
 				fmt.Printf("\x03%02d,%02d", fg, bg)
+			case fgChanged:
+
+				if cell.bold {
+					fg = ansibold[cell.fg]
+				} else {
+					fg = ansinorm[cell.fg]
+				}
+				bg = ansinorm[cell.bg]
+
+				// weechat bug
+				if fg == ansinorm[0] {
+					fmt.Printf("\x03%02d,%02d", fg, bg)
+				} else {
+					fmt.Printf("\x03%02d", fg)
+				}
 			}
 
 			fmt.Printf("%c", cell.char)
 		}
-
 		fmt.Println()
 	}
 }
@@ -472,6 +488,6 @@ type matrix struct {
 	tmpcol int
 }
 
-var ansinorm = []int{1, 5, 3, 7, 2, 6, 10, 15}
+var ansinorm = []int{1, 5, 3, 7, 2, 13, 10, 15}
 
-var ansibold = []int{14, 4, 9, 8, 12, 13, 11, 0}
+var ansibold = []int{14, 4, 9, 8, 12, 6, 11, 0}
