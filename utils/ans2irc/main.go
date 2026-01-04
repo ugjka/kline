@@ -483,6 +483,6 @@ type matrix struct {
 	tmpcol  int
 }
 
-var ansinorm = []int{1, 5, 3, 7, 2, 13, 10, 15}
+var ansinorm = []int{1, 5, 3, 7, 2, 6, 10, 15}
 
-var ansibold = []int{14, 4, 9, 8, 12, 6, 11, 0}
+var ansibold = []int{14, 4, 9, 8, 12, 13, 11, 0}
