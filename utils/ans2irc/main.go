@@ -19,9 +19,9 @@ var COLUMNS *int
 
 func main() {
 	COLUMNS = flag.Int("cols", 80, "column count in ansi artwork")
-	*COLUMNS--
 
 	flag.Parse()
+	*COLUMNS--
 
 	// pass filename as arg
 	if len(flag.Args()) == 0 {
